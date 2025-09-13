@@ -1,0 +1,191 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Terminal dark theme */
+    --background: 0 0% 8%;
+    --foreground: 120 15% 85%;
+
+    --card: 0 0% 10%;
+    --card-foreground: 120 15% 85%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 120 15% 85%;
+
+    /* Neon purple for Somnia */
+    --primary: 280 80% 60%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 120 15% 85%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 120 10% 55%;
+
+    /* Accent colors - muted */
+    --accent: 180 20% 50%;
+    --accent-foreground: 0 0% 8%;
+
+    --destructive: 0 50% 55%;
+    --destructive-foreground: 0 0% 95%;
+
+    --border: 120 10% 25%;
+    --input: 0 0% 12%;
+    --ring: 280 80% 60%;
+
+    --radius: 0.25rem;
+
+    /* Terminal Somnia tokens */
+    --somnia-bg: 0 0% 8%;
+    --somnia-card: 0 0% 10%;
+    --somnia-lime: 280 80% 60%;
+    --somnia-cyan: 180 20% 50%;
+    --somnia-purple: 270 25% 55%;
+    --somnia-orange: 30 40% 55%;
+    --somnia-pink: 320 25% 55%;
+    --somnia-blue: 240 25% 55%;
+    --somnia-gradient: linear-gradient(135deg, hsl(280 80% 60% / 0.1), hsl(300 60% 55% / 0.1));
+    --somnia-glow: 0 0 15px hsl(280 80% 60% / 0.3);
+    --somnia-border: 280 20% 25%;
+    --somnia-hover: 0 0% 12%;
+    
+    /* Subtle terminal effects */
+    --somnia-shadow: 0 4px 12px hsl(0 0% 0% / 0.5);
+    --somnia-glow-strong: 0 0 20px hsl(280 80% 60% / 0.4);
+    --somnia-gradient-strong: linear-gradient(135deg, hsl(280 80% 60% / 0.15), hsl(300 60% 55% / 0.15));
+
+    --sidebar-background: 0 0% 9%;
+    --sidebar-foreground: 120 15% 85%;
+    --sidebar-primary: 280 80% 60%;
+    --sidebar-primary-foreground: 0 0% 8%;
+    --sidebar-accent: 0 0% 13%;
+    --sidebar-accent-foreground: 120 15% 85%;
+    --sidebar-border: 280 20% 25%;
+    --sidebar-ring: 280 80% 60%;
+  }
+
+  .dark {
+    /* Already dark by default, but keeping for compatibility */
+    --background: 222 20% 8%;
+    --foreground: 210 40% 98%;
+    --card: 222 20% 12%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 20% 12%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 84 100% 76%;
+    --primary-foreground: 222 20% 8%;
+    --secondary: 222 15% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 15% 16%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 222 20% 8%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 15% 20%;
+    --input: 222 15% 18%;
+    --ring: 84 100% 76%;
+    --sidebar-background: 222 20% 10%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 84 100% 76%;
+    --sidebar-primary-foreground: 222 20% 8%;
+    --sidebar-accent: 222 15% 18%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 15% 20%;
+    --sidebar-ring: 84 100% 76%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.4;
+    font-size: 14px;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  
+  .font-semibold {
+    font-weight: 500;
+  }
+  
+  .font-medium {
+    font-weight: 400;
+  }
+  
+  .font-bold {
+    font-weight: 500;
+  }
+  
+  /* Terminal text selection */
+  ::selection {
+    background: hsl(var(--primary) / 0.2);
+    color: hsl(var(--foreground));
+  }
+  
+  /* Terminal cursor */
+  .terminal-cursor::after {
+    content: "_";
+    animation: blink 1s infinite;
+    color: hsl(var(--primary));
+  }
+  
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+  
+  /* Scan lines effect */
+  .scan-lines::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      hsl(var(--primary) / 0.03) 2px,
+      hsl(var(--primary) / 0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.3);
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.5);
+  }
+}

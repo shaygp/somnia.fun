@@ -1,0 +1,11 @@
+<svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="500" height="500" fill="black"/>
+<!-- Pill 1 - White and Purple -->
+<ellipse cx="190" cy="250" rx="45" ry="90" fill="#F8F8F8" stroke="#333" stroke-width="2" transform="rotate(-30 190 250)"/>
+<rect x="145" y="210" width="90" height="80" fill="#B855F0" transform="rotate(-30 190 250)"/>
+<ellipse cx="190" cy="330" rx="8" ry="20" fill="#FFFFFF" opacity="0.6" transform="rotate(-30 190 250)"/>
+<!-- Pill 2 - Purple and White -->
+<ellipse cx="310" cy="250" rx="45" ry="90" fill="#B855F0" stroke="#333" stroke-width="2" transform="rotate(30 310 250)"/>
+<rect x="265" y="160" width="90" height="80" fill="#F8F8F8" transform="rotate(30 310 250)"/>
+<ellipse cx="340" cy="180" rx="8" ry="20" fill="#D4A5F7" opacity="0.8" transform="rotate(30 310 250)"/>
+</svg>

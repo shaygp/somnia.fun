@@ -1,0 +1,29 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="50" cy="50" r="40" fill="#FF6B35" stroke="#000" stroke-width="2"/>
+<!-- Cat ears -->
+<path d="M30 25 L20 10 L40 15 Z" fill="#FF6B35" stroke="#000" stroke-width="1.5"/>
+<path d="M70 25 L60 15 L80 10 Z" fill="#FF6B35" stroke="#000" stroke-width="1.5"/>
+<!-- Inner ears -->
+<path d="M28 20 L24 12 L32 15 Z" fill="#FF9F80"/>
+<path d="M68 20 L72 12 L76 15 Z" fill="#FF9F80"/>
+<!-- Eyes -->
+<ellipse cx="40" cy="40" rx="6" ry="8" fill="#000"/>
+<ellipse cx="60" cy="40" rx="6" ry="8" fill="#000"/>
+<ellipse cx="41" cy="38" rx="2" ry="3" fill="#FFF"/>
+<ellipse cx="61" cy="38" rx="2" ry="3" fill="#FFF"/>
+<!-- Nose -->
+<path d="M50 50 L45 55 L55 55 Z" fill="#000"/>
+<!-- Mouth -->
+<path d="M50 55 Q40 65 35 60" stroke="#000" stroke-width="2" fill="none"/>
+<path d="M50 55 Q60 65 65 60" stroke="#000" stroke-width="2" fill="none"/>
+<!-- Whiskers -->
+<line x1="20" y1="45" x2="35" y2="48" stroke="#000" stroke-width="1.5"/>
+<line x1="20" y1="55" x2="35" y2="55" stroke="#000" stroke-width="1.5"/>
+<line x1="65" y1="48" x2="80" y2="45" stroke="#000" stroke-width="1.5"/>
+<line x1="65" y1="55" x2="80" y2="55" stroke="#000" stroke-width="1.5"/>
+<!-- "LAYER" text around the circle -->
+<path id="circle-text" d="M 50 50 m -35 0 A 35 35 0 1 1 49.9 50" fill="none"/>
+<text font-family="Arial Black" font-size="8" font-weight="bold" fill="#FFF" text-anchor="middle">
+  <textPath href="#circle-text" startOffset="25%">LAYER</textPath>
+</text>
+</svg>
