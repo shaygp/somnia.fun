@@ -27,9 +27,9 @@ interface TokenData {
 const TokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
   const { tokenInfo } = useTokenInfo(tokenAddress);
   const { price } = useTokenPrice(tokenAddress);
-  
+
   const isDemoToken = tokenAddress === '0x1234567890123456789012345678901234567890';
-  
+
   const demoTokenInfo = {
     name: "Somnia Cat",
     symbol: "SOMCAT",
@@ -39,7 +39,7 @@ const TokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
     tokensSold: "2500000",
     graduatedToDeX: false
   };
-  
+
   const displayTokenInfo = isDemoToken ? demoTokenInfo : tokenInfo;
   const displayPrice = isDemoToken ? "0.000005" : price;
   
@@ -73,16 +73,38 @@ const TokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
   );
 };
 
-const TokenGrid = () => {
-  const [activeTab, setActiveTab] = useState("all");
+interface TokenGridProps {
+  filter?: string | null;
+}
+
+const TokenGrid = ({ filter }: TokenGridProps) => {
+  const [activeTab, setActiveTab] = useState(filter || "all");
   const { tokens, isLoading } = useAllTokens();
-  
-  // Filter tokens based on active tab
+
+  React.useEffect(() => {
+    if (filter) {
+      switch (filter) {
+        case "trending":
+          setActiveTab("trending");
+          break;
+        case "recent":
+          setActiveTab("new");
+          break;
+        case "favorites":
+          setActiveTab("all");
+          break;
+        default:
+          setActiveTab("all");
+          break;
+      }
+    }
+  }, [filter]);
+
   const demoTokens = ['0x1234567890123456789012345678901234567890'];
-  
+
   const filteredTokens = React.useMemo(() => {
-    const allTokens = tokens && tokens.length > 0 ? tokens : demoTokens;
-    
+    const allTokens = tokens && tokens.length > 0 ? [...demoTokens, ...tokens] : demoTokens;
+
     switch (activeTab) {
       case "trending":
         return allTokens.slice(0, 6);
@@ -94,8 +116,6 @@ const TokenGrid = () => {
         return allTokens;
     }
   }, [tokens, activeTab]);
-
-  // Remove loading state - show content immediately
 
   return (
     <div className="space-y-6 relative scan-lines">

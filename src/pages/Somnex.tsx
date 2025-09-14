@@ -303,7 +303,7 @@ const Somnex = () => {
                       ) : (
                         <div className="text-center py-8 text-muted-foreground">
                           <p>No graduated tokens yet</p>
-                          <p className="text-sm mt-2">Tokens graduate to Somnex DEX after raising 80 STT</p>
+                          <p className="text-sm mt-2">Tokens graduate to Somnex DEX after raising 1000 STT</p>
                         </div>
                       )}
                     </div>
@@ -318,7 +318,7 @@ const Somnex = () => {
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-primary">2.</span>
-                            After raising 80 STT, they graduate to Somnex DEX
+                            After raising 1000 STT, they graduate to Somnex DEX
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-primary">3.</span>

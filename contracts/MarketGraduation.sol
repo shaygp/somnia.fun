@@ -27,7 +27,7 @@ contract MarketGraduation is Ownable, ReentrancyGuard {
     
     mapping(address => GraduationInfo) public graduationInfo;
     
-    uint256 public constant GRADUATION_THRESHOLD = 80 * 10**18;
+    uint256 public constant GRADUATION_THRESHOLD = 1000 * 10**18;
     uint256 public constant LOCKED_LIQUIDITY_STT = 36 * 10**18;
     uint256 public constant LOCKED_LIQUIDITY_TOKENS = 200_000_000 * 10**18;
     uint256 public constant MIN_LIQUIDITY_RATIO = 100;

@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowUpDown, TrendingUp, TrendingDown, Loader2, Rocket } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePumpFun, useTokenPrice, useTokenInfo, useTokenBalance } from "@/hooks/usePumpFun";
-import { useAccount, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useWaitForTransactionReceipt, useChainId, useSwitchChain } from 'wagmi';
+import { somniaTestnetChain } from '@/config/wagmi';
 import { Badge } from "@/components/ui/badge";
 import { useSomnexGraduation } from "@/hooks/useSomnex";
 import { Link } from "react-router-dom";
@@ -17,7 +18,9 @@ interface TradingInterfaceProps {
 
 export default function TradingInterface({ tokenAddress }: TradingInterfaceProps) {
   const { toast } = useToast();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
   const { buyTokens, sellTokens, approveToken } = usePumpFun();
   const { tokenInfo, isLoading: tokenInfoLoading } = useTokenInfo(tokenAddress);
   const { price } = useTokenPrice(tokenAddress);
@@ -35,20 +38,55 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
     hash: txHash as `0x${string}`,
   });
 
+  const handleNetworkSwitch = async () => {
+    try {
+      await switchChain({ chainId: somniaTestnetChain.id });
+      toast({
+        title: "Network Switched",
+        description: "Successfully switched to Somnia Testnet",
+      });
+    } catch (error) {
+      toast({
+        title: "Network Switch Failed",
+        description: "Please manually switch to Somnia Testnet in your wallet",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleBuy = async () => {
-    if (!sttAmount || !address) return;
+    if (!address) {
+      toast({
+        title: "Wallet Required",
+        description: "Please connect your wallet to trade",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (chain?.id !== somniaTestnetChain.id) {
+      toast({
+        title: "Wrong Network",
+        description: "Please switch to Somnia Testnet to trade",
+        variant: "destructive"
+      });
+      await handleNetworkSwitch();
+      return;
+    }
+
+    if (!sttAmount) return;
 
     setIsTrading(true);
-    
+
     try {
       const hash = await buyTokens(tokenAddress, sttAmount);
       setTxHash(hash);
-      
+
       toast({
         title: "Purchase Initiated",
         description: "Waiting for transaction confirmation...",
       });
-      
+
     } catch (error: any) {
       console.error("Buy error:", error);
       toast({
@@ -61,10 +99,29 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
   };
 
   const handleSell = async () => {
-    if (!tokenAmount || !address) return;
+    if (!address) {
+      toast({
+        title: "Wallet Required",
+        description: "Please connect your wallet to trade",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (chain?.id !== somniaTestnetChain.id) {
+      toast({
+        title: "Wrong Network",
+        description: "Please switch to Somnia Testnet to trade",
+        variant: "destructive"
+      });
+      await handleNetworkSwitch();
+      return;
+    }
+
+    if (!tokenAmount) return;
 
     setIsTrading(true);
-    
+
     try {
       if (needsApproval) {
         const approveHash = await approveToken(tokenAddress, tokenAmount);
@@ -75,15 +132,15 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
         });
         return;
       }
-      
+
       const hash = await sellTokens(tokenAddress, tokenAmount);
       setTxHash(hash);
-      
+
       toast({
         title: "Sale Initiated",
         description: "Waiting for transaction confirmation...",
       });
-      
+
     } catch (error: any) {
       console.error("Sell error:", error);
       toast({
@@ -132,9 +189,9 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
     );
   }
 
-  const progressToGraduation = tokenInfo.graduatedToDeX ? 
-    100 : 
-    (parseFloat(tokenInfo.sttRaised) / 80) * 100;
+  const progressToGraduation = tokenInfo.graduatedToDeX ?
+    100 :
+    (parseFloat(tokenInfo.sttRaised) / 1000) * 100;
 
   return (
     <Card className="bg-card border-border">
@@ -162,7 +219,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span>Progress to Somnex DEX</span>
-            <span>{tokenInfo.graduatedToDeX ? "Graduated to Somnex!" : `${tokenInfo.sttRaised}/80 STT`}</span>
+            <span>{tokenInfo.graduatedToDeX ? "Graduated to Somnex!" : `${tokenInfo.sttRaised}/1000 STT`}</span>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div
@@ -190,8 +247,31 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
               </p>
               <Button
                 onClick={async () => {
-                  await graduateToken();
-                  await listOnSomnex();
+                  if (!address) {
+                    toast({
+                      title: "Wallet Required",
+                      description: "Please connect your wallet to graduate token",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+
+                  if (chain?.id !== somniaTestnetChain.id) {
+                    toast({
+                      title: "Wrong Network",
+                      description: "Please switch to Somnia Testnet to graduate token",
+                      variant: "destructive"
+                    });
+                    await handleNetworkSwitch();
+                    return;
+                  }
+
+                  try {
+                    await graduateToken();
+                    await listOnSomnex();
+                  } catch (error: any) {
+                    console.error("Graduation error:", error);
+                  }
                 }}
                 className="w-full bg-green-600 hover:bg-green-700"
               >

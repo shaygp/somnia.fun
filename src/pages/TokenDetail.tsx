@@ -126,7 +126,7 @@ const TokenDetail = () => {
           <Card className="bg-somnia-card border-somnia-border p-4">
             <p className="text-sm text-muted-foreground">STT Raised</p>
             <p className="text-xl font-bold text-foreground">{parseFloat(displayTokenInfo.sttRaised).toFixed(2)} STT</p>
-            <p className="text-sm text-muted-foreground">{displayTokenInfo.graduatedToDeX ? "Graduated" : "/ 80 STT"}</p>
+            <p className="text-sm text-muted-foreground">{displayTokenInfo.graduatedToDeX ? "Graduated" : "/ 1000 STT"}</p>
           </Card>
           
           <Card className="bg-somnia-card border-somnia-border p-4">
@@ -181,7 +181,7 @@ const TokenDetail = () => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Created At</p>
-                      <p className="text-sm text-foreground">Jan 1, 2024</p>
+                      <p className="text-sm text-foreground">Sun 14 Sept</p>
                     </div>
                   </div>
                 </TabsContent>

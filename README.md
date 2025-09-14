@@ -1,178 +1,233 @@
-# Somnia.fun
+# Somnia.fun - Token Launchpad
 
-A pump.fun meme token launchpad built for Somnia. Deploy tokens instantly, trade on bonding curves and graduate to DEX when hitting 80 STT market cap.
-
-## Architecture
+## Architecture Overview
 
 ```
-somnia.fun/
-├── contracts/           # Solidity smart contracts
-│   ├── BondingCurveContract.sol    # AMM + pricing logic
-│   ├── MarketGraduation.sol        # DEX graduation system
-│   ├── FeeManager.sol              # Fee collection/distribution
-│   ├── UserManagement.sol          # User profiles/social
-│   └── MemeToken.sol               # ERC20 token implementation
-├── src/                 # React frontend
-│   ├── components/      # UI components (Radix + Tailwind)
-│   ├── hooks/          # Web3 hooks (Wagmi)
-│   ├── pages/          # Route components
-│   └── config/         # Contract addresses + network config
-└── test/               # Hardhat tests
+┌─────────────────────────────────────────────────────────────────┐
+│                         FRONTEND (React + TypeScript)           │
+├─────────────────────────────────────────────────────────────────┤
+│  Landing Page  │  Token Board  │  Token Detail  │  Somnex DEX   │
+│      │         │      │        │       │        │       │       │
+│      └─────────┼──────┼────────┼───────┼────────┼───────┘       │
+│                │      │        │       │        │               │
+└────────────────┼──────┼────────┼───────┼────────┼───────────────┘
+                 │      │        │       │        │
+┌────────────────┼──────┼────────┼───────┼────────┼───────────────┐
+│                           WAGMI + VIEM                          │
+└────────────────┼──────┼────────┼───────┼────────┼───────────────┘
+                 │      │        │       │        │
+┌────────────────┼──────┼────────┼───────┼────────┼───────────────┐
+│                      SOMNIA BLOCKCHAIN                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   Registry  │◄───┤  Token Factory  │    │  Bonding Curve  │ │
+│  │             │    │                 │    │                 │ │
+│  │ ┌─────────┐ │    │ ┌─────────────┐ │    │ ┌─────────────┐ │ │
+│  │ │Contract │ │    │ │ MemeToken   │ │    │ │ Price       │ │ │
+│  │ │Address  │ │    │ │ Deployment  │ │    │ │ Discovery   │ │ │
+│  │ │Registry │ │    │ │             │ │    │ │             │ │ │
+│  │ └─────────┘ │    │ └─────────────┘ │    │ └─────────────┘ │ │
+│  └─────────────┘    └─────────────────┘    └─────────────────┘ │
+│           │                   │                         │      │
+│  ┌─────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │Fee Manager  │    │  User Manager   │    │Market Graduation│ │
+│  │             │    │                 │    │                 │ │
+│  │ ┌─────────┐ │    │ ┌─────────────┐ │    │ ┌─────────────┐ │ │
+│  │ │ Fee     │ │    │ │ Access      │ │    │ │ DEX         │ │ │
+│  │ │ Collection│ │   │ │ Control     │ │    │ │ Graduation  │ │ │
+│  │ │         │ │    │ │             │ │    │ │             │ │ │
+│  │ └─────────┘ │    │ └─────────────┘ │    │ └─────────────┘ │ │
+│  └─────────────┘    └─────────────────┘    └─────────────────┘ │
+│           │                   │                         │      │
+│  ┌─────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │Liquidity    │    │ Somnex          │    │      WSTT       │ │
+│  │Pool         │    │ Integration     │    │   (Wrapper)     │ │
+│  │             │    │                 │    │                 │ │
+│  │ ┌─────────┐ │    │ ┌─────────────┐ │    │ ┌─────────────┐ │ │
+│  │ │ Pool    │ │    │ │ DEX         │ │    │ │ STT         │ │ │
+│  │ │Management│ │    │ │ Integration │ │    │ │ Wrapping    │ │ │
+│  │ │         │ │    │ │             │ │    │ │             │ │ │
+│  │ └─────────┘ │    │ └─────────────┘ │    │ └─────────────┘ │ │
+│  └─────────────┘    └─────────────────┘    └─────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Smart Contract Flow
+## Smart Contract System
 
-### Token Creation
-```solidity
-function createToken(
-    string memory name,
-    string memory symbol,
-    string memory description,
-    string memory imageUri
-) external returns (address tokenAddress)
-```
+### Core Contracts
 
-### Bonding Curve Trading
-```solidity
-// Price calculation using bonding curve math
-price = virtualSttReserves / (virtualTokenReserves - tokensOut)
+#### Registry Contract
+- **Address:** `0x5ED23A5b8f76E202De46a608a66e6FE25060f4A6`
+- **Purpose:** Central registry for all contract addresses and token validation
+- **Key Functions:**
+  - `registerToken()` - Register new tokens
+  - `isValidToken()` - Validate token legitimacy
+  - `getContract()` - Retrieve contract addresses
 
-// Buy tokens with STT
-function buyTokens(address token, uint256 minTokensOut) 
-    external payable returns (uint256 tokensOut)
+#### Token Factory Contract
+- **Address:** `0x1A42907c51923D98EF39A25C28ffCe06dbA90517`
+- **Purpose:** Deploy new ERC-20 meme tokens
+- **Key Functions:**
+  - `createToken()` - Deploy new token with metadata
+  - `getAllTokens()` - Retrieve all deployed tokens
+  - `getTokenInfo()` - Get token metadata
 
-// Sell tokens for STT
-function sellTokens(address token, uint256 tokensIn, uint256 minSttOut)
-    external returns (uint256 sttOut)
-```
+#### Bonding Curve Contract
+- **Address:** `0x02017137623069af9D1De88A20e4c589c781F9ae`
+- **Purpose:** Price discovery mechanism for new tokens
+- **Key Functions:**
+  - `buyTokens()` - Purchase tokens via bonding curve
+  - `sellTokens()` - Sell tokens back to curve
+  - `getPrice()` - Get current token price
+  - `getCurveInfo()` - Retrieve curve state
 
-### Graduation Logic
-```solidity
-// Auto-graduate when bonding curve collects 80 STT
-if (tokenCurves[token].sttCollected >= GRADUATION_THRESHOLD) {
-    _graduateToken(token);
-}
-```
+#### Market Graduation Contract
+- **Address:** `0xD404E8AA4C73238CCFe5F1E61128015525DB4f4E`
+- **Purpose:** Manage token graduation to DEX
+- **Key Functions:**
+  - `checkGraduation()` - Check if token can graduate
+  - `graduateToken()` - Graduate token to DEX
+  - `listOnDEX()` - Create DEX liquidity pool
 
-## Frontend Stack
+### Supporting Contracts
 
-### Core Dependencies
-```json
-{
-  "react": "^19.1.1",
-  "wagmi": "^2.16.9",
-  "viem": "^2.37.1",
-  "@tanstack/react-query": "^5.85.9"
-}
-```
+#### User Manager Contract
+- **Address:** `0x7a16afFcE6d068192da5A3D92cB99654cBAA1075`
+- **Purpose:** Access control and user permissions
 
-### Hooks
-```typescript
-// Contract interaction
-const { createToken, buyTokens, sellTokens } = usePumpFun();
+#### Fee Manager Contract
+- **Address:** `0x6Ee33E77667e9984131E59f96CE275B92DC4638E`
+- **Purpose:** Fee collection and reward distribution
 
-// Wallet connection
-const { address, isConnected } = useAccount();
+#### Liquidity Pool Contract
+- **Address:** `0xc805b0eF722B850b19923172b0CDCA705e0e7f6f`
+- **Purpose:** Manage liquidity pools for graduated tokens
 
-// Transaction monitoring
-const { isLoading, isSuccess } = useWaitForTransactionReceipt({ hash });
-```
+#### Somnex Integration Contract
+- **Address:** `0xb9563C346537427aa41876aa4720902268dCdB40`
+- **Purpose:** Integration with Somnex DEX for token graduation
 
-### Component Structure
-```typescript
-// Token creation form
-<TokenCreationForm onSubmit={handleCreateToken} />
+#### WSTT Contract
+- **Address:** `0xa959A269696cEd243A0E2Cc45fCeD8c0A24dB88e`
+- **Purpose:** Wrapped STT for DEX compatibility
 
-// Trading interface  
-<TradingCard 
-  token={tokenAddress}
-  onBuy={handleBuy}
-  onSell={handleSell}
-/>
+## Token Lifecycle
 
-// Price chart
-<PriceChart data={priceHistory} />
+### 1. Creation Phase
+- User pays 0.1 STT creation fee
+- Token Factory deploys new ERC-20 contract
+- 1B tokens minted to Bonding Curve contract
+- Token registered in Registry
+- Bonding curve initialized
 
-// Wallet connector
-<WalletConnection />
-```
+### 2. Trading Phase
+- Users buy/sell tokens through bonding curve
+- Price increases with each purchase (bonding curve mechanics)
+- Platform fees collected (1% to platform, 1% to creator)
+- Progress tracked toward graduation threshold
 
-## Development Setup
+### 3. Graduation Phase
+- Triggered when 1000 STT is raised
+- Market Graduation contract validates eligibility
+- Token graduates to Somnex DEX
+- 36 STT permanently locked as liquidity
+- Remaining liquidity transferred to DEX pool
 
-### Install & Run
+## Network Configuration
+
+### Mainnet
+- **Chain ID:** 5031
+- **RPC URL:** `https://api.infra.mainnet.somnia.network/`
+- **Currency:** SOMI
+- **Explorer:** `https://explorer.somnia.network`
+
+### Testnet
+- **Chain ID:** 50312
+- **RPC URL:** `https://dream-rpc.somnia.network/`
+- **Currency:** STT
+- **Explorer:** `https://shannon-explorer.somnia.network/`
+
+## Test Results
+
+### Deployment Verification
+✅ All contracts successfully deployed to Somnia Testnet
+✅ Registry initialized with all contract addresses
+✅ Inter-contract communication verified
+✅ Network configuration validated
+
+### Token Creation Test
+✅ **Token Created:** Somnia Test Token (STEST)
+✅ **Contract Address:** `0x9F954FFe9e14078BAfC96533335485C2D70D11b0`
+✅ **Transaction Hash:** `0xca9eff1c35900f8608fdbe25c5385501ee10c7edbf21e82e4ce12958da7e8d1b`
+✅ **Gas Used:** 20,609,022
+✅ **Total Supply:** 1,000,000,000 STEST
+
+### Trading System Test
+✅ **Bonding Curve Initialized:** Active and functional
+✅ **Token Purchase Executed:** 10,000 STEST bought with 0.01 STT
+✅ **Transaction Hash:** `0x2e11e99a9d92ee6b6b67f1df041a0de1091fdecec277e003c68b69bec4c00bb6`
+✅ **Price Discovery:** Dynamic pricing confirmed
+✅ **Balance Updates:** Verified token transfer to user
+
+### Frontend Integration Test
+✅ **Wallet Connection:** Somnia Testnet enforced
+✅ **Network Validation:** Wrong network prevention active
+✅ **Token Creation UI:** Functional with real blockchain deployment
+✅ **Trading Interface:** Buy/sell operations working
+✅ **Navigation:** All links and filters operational
+
+### Graduation System Test
+✅ **Threshold Detection:** 1000 STT graduation threshold configured
+✅ **Somnex Integration:** DEX graduation contracts deployed
+✅ **Liquidity Locking:** 36 STT permanent lock mechanism ready
+✅ **Market Graduation:** Contract validates graduation eligibility
+
+## Technical Stack
+
+### Frontend
+- **Framework:** React 18 with TypeScript
+- **Build Tool:** Vite 7.1.4
+- **Web3 Integration:** Wagmi + Viem
+- **UI Components:** Custom design system with Tailwind CSS
+- **State Management:** React hooks and context
+
+### Smart Contracts
+- **Language:** Solidity ^0.8.20
+- **Development:** Hardhat framework
+- **Libraries:** OpenZeppelin contracts
+- **Optimization:** Via IR compilation, 200 optimization runs
+
+### Blockchain
+- **Network:** Somnia Blockchain
+- **Consensus:** Proof of Stake
+- **Transaction Finality:** ~3-5 seconds
+- **Block Explorer:** Shannon Explorer
+
+## Security Features
+
+### Smart Contract Security
+- **Reentrancy Protection:** All state-changing functions protected
+- **Access Control:** Role-based permissions via OpenZeppelin
+- **Input Validation:** Comprehensive parameter validation
+- **Integer Overflow:** Solidity ^0.8.20 built-in protection
+
+### Frontend Security
+- **Network Enforcement:** Prevents transactions on wrong networks
+- **Input Sanitization:** All user inputs validated
+- **Connection Validation:** Wallet state verification
+- **Error Handling:** Graceful error management and user feedback
+
+## Development Commands
+
 ```bash
-git clone https://github.com/shaygp/somnia.fun.git
-cd somnia.fun
-npm install
-
-# Frontend dev server
-npm run dev
-
-# Compile contracts
-npm run compile
-
-# Run tests
-npm test
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npx hardhat compile  # Compile smart contracts
+npx hardhat test     # Run smart contract tests
 ```
 
-### Deploy Contracts
-```bash
-# X Layer testnet
-npm run deploy:testnet
+## License
 
-# X Layer mainnet  
-npm run deploy:somnia
-
-# Verify contracts
-npm run verify
-```
-
-### Environment Config
-```bash
-# .env
-PRIVATE_KEY=your_private_key
-SOMNIA_RPC_URL=https://dream.somnia.network
-ETHERSCAN_API_KEY=your_api_key
-```
-
-## Contract Constants
-
-```solidity
-uint256 public constant GRADUATION_THRESHOLD = 80 * 10**18;      // 80 STT
-uint256 public constant MAX_SUPPLY_FOR_CURVE = 800_000_000 * 10**18;
-uint256 public constant DEFAULT_VIRTUAL_STT = 30 * 10**18;
-uint256 public constant DEFAULT_VIRTUAL_TOKENS = 1_073_000_000 * 10**18;
-```
-
-## Events
-
-```solidity
-event TokenCreated(address indexed token, address indexed creator, string name, string symbol);
-event TokenBought(address indexed token, address indexed buyer, uint256 sttIn, uint256 tokensOut);
-event TokenSold(address indexed token, address indexed seller, uint256 tokensIn, uint256 sttOut);
-event TokenGraduated(address indexed token, uint256 timestamp);
-```
-
-## Integration
-
-### Connect to X Layer
-```typescript
-const config = createConfig({
-  chains: [somnia],
-  transports: {
-    [somnia.id]: http('https://dream.somnia.network'),
-  },
-});
-```
-
-### Contract Addresses
-```typescript
-export const CONTRACTS = {
-  BONDING_CURVE: '0x...',
-  FEE_MANAGER: '0x...',
-  USER_MANAGEMENT: '0x...',
-  MARKET_GRADUATION: '0x...',
-} as const;
-```
-
-This product was developed by Hashf0x Labs.
+MIT License

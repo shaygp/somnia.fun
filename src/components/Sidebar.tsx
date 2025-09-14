@@ -1,4 +1,4 @@
-import { Home, TrendingUp, Clock, Star, Plus, Settings, HelpCircle, Rocket } from "lucide-react";
+import { Home, TrendingUp, Clock, Star, Plus, Settings, HelpCircle, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Link, useLocation } from "react-router-dom";
@@ -9,10 +9,10 @@ const Sidebar = () => {
 
   const navItems = [
     { icon: Home, label: "All Tokens", path: "/board", active: location.pathname === "/board" },
-    { icon: Rocket, label: "Somnex DEX", path: "/somnex", active: location.pathname === "/somnex" },
-    { icon: TrendingUp, label: "Trending", path: "/board", count: 24 },
-    { icon: Clock, label: "Recently Created", path: "/board", count: 156 },
-    { icon: Star, label: "Favorites", path: "/board", count: 8 },
+    { icon: ArrowRightLeft, label: "Somnex DEX", path: "/somnex", active: location.pathname === "/somnex" },
+    { icon: TrendingUp, label: "Trending", path: "/board?filter=trending", count: 24, active: location.search === "?filter=trending" },
+    { icon: Clock, label: "Recently Created", path: "/board?filter=recent", count: 156, active: location.search === "?filter=recent" },
+    { icon: Star, label: "Favorites", path: "/board?filter=favorites", count: 8, active: location.search === "?filter=favorites" },
   ];
 
   const quickActions = [
@@ -20,7 +20,7 @@ const Sidebar = () => {
       (document.querySelector('[data-create-token]') as HTMLButtonElement)?.click();
     }},
     { icon: Settings, label: "Portfolio", path: "/portfolio" },
-    { icon: HelpCircle, label: "Help" },
+    { icon: HelpCircle, label: "Help", path: "/board?help=true" },
   ];
 
   return (

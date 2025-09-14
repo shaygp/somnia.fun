@@ -109,7 +109,7 @@ const BondingCurveChart = ({
               <Droplets className="w-4 h-4 text-accent mr-1" />
               <span className="text-xs text-muted-foreground">Liquidity Pool</span>
             </div>
-            <p className="font-semibold text-foreground">{liquidityPooled}/80 STT</p>
+            <p className="font-semibold text-foreground">{liquidityPooled}/1000 STT</p>
           </div>
           
           <div className="text-center">

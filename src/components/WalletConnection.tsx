@@ -4,8 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Wallet, ExternalLink, Copy, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAccount, useConnect, useDisconnect, useBalance } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useBalance, useSwitchChain } from 'wagmi';
 import { injected, metaMask } from 'wagmi/connectors';
+import { somniaTestnetChain } from '../config/wagmi';
 
 interface WalletConnectionProps {}
 
@@ -13,9 +14,10 @@ const WalletConnection = ({}: WalletConnectionProps) => {
   const { toast } = useToast();
   const [showModal, setShowModal] = useState(false);
   
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chain } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
+  const { switchChain } = useSwitchChain();
   
   const { data: balance } = useBalance({
     address,
@@ -40,9 +42,12 @@ const WalletConnection = ({}: WalletConnectionProps) => {
 
   const handleWalletConnect = async (connector: any, walletName: string) => {
     try {
-      connect({ connector });
+      connect({
+        connector,
+        chainId: somniaTestnetChain.id
+      });
       setShowModal(false);
-      
+
       toast({
         title: "Wallet Connected",
         description: `Successfully connected with ${walletName}`,
@@ -51,6 +56,22 @@ const WalletConnection = ({}: WalletConnectionProps) => {
       toast({
         title: "Connection Failed",
         description: "Failed to connect wallet. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleNetworkSwitch = async () => {
+    try {
+      await switchChain({ chainId: somniaTestnetChain.id });
+      toast({
+        title: "Network Switched",
+        description: "Successfully switched to Somnia Testnet",
+      });
+    } catch (error) {
+      toast({
+        title: "Network Switch Failed",
+        description: "Please manually switch to Somnia Testnet in your wallet",
         variant: "destructive",
       });
     }
@@ -79,6 +100,8 @@ const WalletConnection = ({}: WalletConnectionProps) => {
   };
 
   if (isConnected && address) {
+    const isWrongNetwork = chain?.id !== somniaTestnetChain.id;
+
     return (
       <div className="flex items-center space-x-3">
         <div className="hidden sm:block text-right">
@@ -86,8 +109,21 @@ const WalletConnection = ({}: WalletConnectionProps) => {
             {balance ? `${parseFloat(balance.formatted).toFixed(4)} ${balance.symbol}` : '0.0000 STT'}
           </p>
           <p className="text-xs text-muted-foreground">{formatAddress(address)}</p>
+          {isWrongNetwork && (
+            <p className="text-xs text-destructive">Wrong Network</p>
+          )}
         </div>
         <div className="flex items-center space-x-2">
+          {isWrongNetwork && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleNetworkSwitch}
+              className="text-xs"
+            >
+              Switch to Somnia
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"

@@ -1,17 +1,17 @@
 import { http, createConfig } from 'wagmi'
 import { injected, metaMask } from 'wagmi/connectors'
 
-export const somniaChain = {
-  id: 50311,
+export const somniaMainnetChain = {
+  id: 5031,
   name: 'Somnia',
   nativeCurrency: {
     decimals: 18,
-    name: 'STT',
-    symbol: 'STT',
+    name: 'SOMI',
+    symbol: 'SOMI',
   },
   rpcUrls: {
-    public: { http: ['https://dream.somnia.network'] },
-    default: { http: ['https://dream.somnia.network'] },
+    public: { http: ['https://api.infra.mainnet.somnia.network/'] },
+    default: { http: ['https://api.infra.mainnet.somnia.network/'] },
   },
   blockExplorers: {
     default: { name: 'Somnia Explorer', url: 'https://explorer.somnia.network' },
@@ -19,30 +19,30 @@ export const somniaChain = {
 } as const
 
 export const somniaTestnetChain = {
-  id: 50311,
-  name: 'Somnia Devnet',
+  id: 50312,
+  name: 'Somnia Testnet',
   nativeCurrency: {
     decimals: 18,
     name: 'STT',
     symbol: 'STT',
   },
   rpcUrls: {
-    public: { http: ['https://dream.somnia.network'] },
-    default: { http: ['https://dream.somnia.network'] },
+    public: { http: ['https://dream-rpc.somnia.network/'] },
+    default: { http: ['https://dream-rpc.somnia.network/'] },
   },
   blockExplorers: {
-    default: { name: 'Somnia Devnet Explorer', url: 'https://explorer.somnia.network' },
+    default: { name: 'Somnia Shannon Explorer', url: 'https://shannon-explorer.somnia.network/' },
   },
 } as const
 
 export const config = createConfig({
-  chains: [somniaChain, somniaTestnetChain],
+  chains: [somniaMainnetChain, somniaTestnetChain],
   connectors: [
     injected(),
     metaMask(),
   ],
   transports: {
-    [somniaChain.id]: http(),
+    [somniaMainnetChain.id]: http(),
     [somniaTestnetChain.id]: http(),
   },
 })

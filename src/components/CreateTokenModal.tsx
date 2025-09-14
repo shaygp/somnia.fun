@@ -9,7 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { usePumpFun } from "@/hooks/usePumpFun";
-import { useWaitForTransactionReceipt } from 'wagmi';
+import { useWaitForTransactionReceipt, useAccount, useChainId, useSwitchChain } from 'wagmi';
+import { somniaTestnetChain } from '@/config/wagmi';
 
 interface CreateTokenModalProps {
   isOpen: boolean;
@@ -19,6 +20,9 @@ interface CreateTokenModalProps {
 const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
   const { toast } = useToast();
   const { createToken } = usePumpFun();
+  const { address, isConnected, chain } = useAccount();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
   const [step, setStep] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
   const [txHash, setTxHash] = useState<string>("");
@@ -51,10 +55,45 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
     }
   };
 
+  const handleNetworkSwitch = async () => {
+    try {
+      await switchChain({ chainId: somniaTestnetChain.id });
+      toast({
+        title: "Network Switched",
+        description: "Successfully switched to Somnia Testnet",
+      });
+    } catch (error) {
+      toast({
+        title: "Network Switch Failed",
+        description: "Please manually switch to Somnia Testnet in your wallet",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCreateToken = async () => {
+    if (!isConnected) {
+      toast({
+        title: "Wallet Required",
+        description: "Please connect your wallet to create a token",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (chain?.id !== somniaTestnetChain.id) {
+      toast({
+        title: "Wrong Network",
+        description: "Please switch to Somnia Testnet to create tokens",
+        variant: "destructive"
+      });
+      await handleNetworkSwitch();
+      return;
+    }
+
     setIsCreating(true);
     setStep(2);
-    
+
     try {
       const hash = await createToken(
         formData.name,
@@ -62,14 +101,14 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
         formData.imageUri || "https://via.placeholder.com/200",
         formData.description
       );
-      
+
       setTxHash(hash);
-      
+
       toast({
         title: "Token Creation Initiated",
         description: "Waiting for transaction confirmation...",
       });
-      
+
     } catch (error: any) {
       console.error("Token creation error:", error);
       toast({
@@ -184,7 +223,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Liquidity Pool:</span>
-            <span className="text-foreground">80 STT threshold</span>
+            <span className="text-foreground">1000 STT threshold</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Locked Liquidity:</span>
@@ -193,20 +232,40 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
         </div>
       </div>
 
-      <Button 
-        onClick={handleCreateToken}
-        disabled={!formData.name || !formData.symbol || !formData.description || isCreating || isConfirming}
-        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-      >
-        {isCreating || isConfirming ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            {isConfirming ? "Confirming..." : "Creating..."}
-          </>
-        ) : (
-          `Create Token for ${formData.creationFee} STT`
-        )}
-      </Button>
+      {!isConnected ? (
+        <div className="space-y-4">
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+            <p className="text-yellow-600 text-sm">Please connect your wallet to create a token</p>
+          </div>
+        </div>
+      ) : chain?.id !== somniaTestnetChain.id ? (
+        <div className="space-y-4">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+            <p className="text-red-600 text-sm">Please switch to Somnia Testnet to create tokens</p>
+          </div>
+          <Button
+            onClick={handleNetworkSwitch}
+            className="w-full bg-red-500 hover:bg-red-600 text-white font-medium"
+          >
+            Switch to Somnia Testnet
+          </Button>
+        </div>
+      ) : (
+        <Button
+          onClick={handleCreateToken}
+          disabled={!formData.name || !formData.symbol || !formData.description || isCreating || isConfirming}
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+        >
+          {isCreating || isConfirming ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              {isConfirming ? "Confirming..." : "Creating..."}
+            </>
+          ) : (
+            `Create Token for ${formData.creationFee} STT`
+          )}
+        </Button>
+      )}
     </div>
   );
 

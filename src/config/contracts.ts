@@ -1,25 +1,25 @@
 import { getContractAddresses, getSomnexConfig } from './networks';
 
-export const SOMNIA_CHAIN_ID = 50311;
-export const SOMNIA_TESTNET_CHAIN_ID = 50311;
+export const SOMNIA_MAINNET_CHAIN_ID = 5031;
+export const SOMNIA_TESTNET_CHAIN_ID = 50312;
 
-export const SOMNIA_CONFIG = {
-  chainId: SOMNIA_CHAIN_ID,
+export const SOMNIA_MAINNET_CONFIG = {
+  chainId: SOMNIA_MAINNET_CHAIN_ID,
   name: 'Somnia',
-  currency: 'STT',
+  currency: 'SOMI',
   explorerUrl: 'https://explorer.somnia.network',
-  rpcUrl: 'https://dream.somnia.network'
+  rpcUrl: 'https://api.infra.mainnet.somnia.network/'
 };
 
 export const SOMNIA_TESTNET_CONFIG = {
   chainId: SOMNIA_TESTNET_CHAIN_ID,
-  name: 'Somnia Devnet',
+  name: 'Somnia Testnet',
   currency: 'STT',
-  explorerUrl: 'https://explorer.somnia.network',
-  rpcUrl: 'https://dream.somnia.network'
+  explorerUrl: 'https://shannon-explorer.somnia.network/',
+  rpcUrl: 'https://dream-rpc.somnia.network/'
 };
 
-const isTestnet = typeof window !== 'undefined' && window.location.hostname.includes('test');
+const isTestnet = true;
 
 export const CONTRACT_ADDRESSES = getContractAddresses(isTestnet);
 

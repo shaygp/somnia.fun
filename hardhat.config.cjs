@@ -14,16 +14,15 @@ module.exports = {
   },
   networks: {
     somnia: {
-      url: "https://dream.somnia.network",
-      chainId: 50311,
+      url: "https://api.infra.mainnet.somnia.network/",
+      chainId: 5031,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       gasPrice: 20000000000, // 20 gwei
     },
     "somnia-devnet": {
-      url: "https://dream.somnia.network",
-      chainId: 50311,
+      url: "https://dream-rpc.somnia.network/",
+      chainId: 50312,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      gasPrice: 20000000000,
     },
     hardhat: {
       chainId: 1337,

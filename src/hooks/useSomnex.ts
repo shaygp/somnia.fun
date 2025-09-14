@@ -97,9 +97,11 @@ const SOMNEX_INTEGRATION_ABI = [
   }
 ];
 
-const SOMNEX_CONTRACT_ADDRESSES = {
-  mainnet: '0x1234567890123456789012345678901234567890',
-  testnet: '0x0987654321098765432109876543210987654321'
+import { getSomnexConfig } from '@/config/networks';
+
+const getSomnexAddress = (isTestnet: boolean) => {
+  const config = getSomnexConfig(isTestnet);
+  return config.integration;
 };
 
 export const useSomnexSwap = () => {
@@ -108,8 +110,8 @@ export const useSomnexSwap = () => {
   const { writeContract } = useWriteContract();
   const { toast } = useToast();
 
-  const isTestnet = chainId === 50311;
-  const somnexAddress = isTestnet ? SOMNEX_CONTRACT_ADDRESSES.testnet : SOMNEX_CONTRACT_ADDRESSES.mainnet;
+  const isTestnet = chainId === 50312;
+  const somnexAddress = getSomnexAddress(isTestnet);
 
   const getQuote = (tokenIn: string, tokenOut: string, amountIn: string) => {
     if (!amountIn || isNaN(parseFloat(amountIn))) return "0";
@@ -183,8 +185,8 @@ export const useSomnexGraduation = (tokenAddress: string) => {
   const { writeContract } = useWriteContract();
   const { toast } = useToast();
 
-  const isTestnet = chainId === 50311;
-  const somnexAddress = isTestnet ? SOMNEX_CONTRACT_ADDRESSES.testnet : SOMNEX_CONTRACT_ADDRESSES.mainnet;
+  const isTestnet = chainId === 50312;
+  const somnexAddress = getSomnexAddress(isTestnet);
 
   const { data: canGraduate, isLoading: checkingGraduation } = useReadContract({
     address: somnexAddress as `0x${string}`,
@@ -298,8 +300,8 @@ export const useSomnexGraduation = (tokenAddress: string) => {
 
 export const useSomnexTokenPrice = (tokenAddress: string) => {
   const chainId = useChainId();
-  const isTestnet = chainId === 50311;
-  const somnexAddress = isTestnet ? SOMNEX_CONTRACT_ADDRESSES.testnet : SOMNEX_CONTRACT_ADDRESSES.mainnet;
+  const isTestnet = chainId === 50312;
+  const somnexAddress = getSomnexAddress(isTestnet);
 
   const { data: price, isLoading } = useReadContract({
     address: somnexAddress as `0x${string}`,
@@ -319,7 +321,7 @@ export const useSomnexTokenPrice = (tokenAddress: string) => {
 
 export const useSomnexPools = () => {
   const chainId = useChainId();
-  const isTestnet = chainId === 50311;
+  const isTestnet = chainId === 50312;
 
   const getPools = () => {
     return [

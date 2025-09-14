@@ -78,7 +78,7 @@ contract SomnexIntegration is Ownable, ReentrancyGuard {
 
     mapping(address => SomnexGraduationInfo) public graduationInfo;
 
-    uint256 public constant GRADUATION_THRESHOLD = 80 * 10**18;
+    uint256 public constant GRADUATION_THRESHOLD = 1000 * 10**18;
     uint256 public constant LOCKED_LIQUIDITY_STT = 36 * 10**18;
     uint256 public constant LOCKED_LIQUIDITY_TOKENS = 200_000_000 * 10**18;
     uint256 public constant PERMANENT_LOCK_DURATION = 365 days * 100;
@@ -264,7 +264,6 @@ contract SomnexIntegration is Ownable, ReentrancyGuard {
         (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
 
         address token0 = pair.token0();
-        address wsttAddress = registry.getWSTT();
 
         if (token0 == token) {
             priceInSTT = (uint256(reserve1) * 10**18) / uint256(reserve0);
