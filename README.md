@@ -1,6 +1,6 @@
-# Somnia.fun - Token Launchpad
+# Somnia.fun 
 
-## Architecture Overview
+## Architecture 
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -114,20 +114,20 @@
 
 ## Token Lifecycle
 
-### 1. Creation Phase
+### 1. Creation 
 - User pays 0.1 STT creation fee
 - Token Factory deploys new ERC-20 contract
 - 1B tokens minted to Bonding Curve contract
 - Token registered in Registry
 - Bonding curve initialized
 
-### 2. Trading Phase
+### 2. Trading 
 - Users buy/sell tokens through bonding curve
 - Price increases with each purchase (bonding curve mechanics)
 - Platform fees collected (1% to platform, 1% to creator)
 - Progress tracked toward graduation threshold
 
-### 3. Graduation Phase
+### 3. Graduation 
 - Triggered when 1000 STT is raised
 - Market Graduation contract validates eligibility
 - Token graduates to Somnex DEX
@@ -148,22 +148,22 @@
 - **Currency:** STT
 - **Explorer:** `https://shannon-explorer.somnia.network/`
 
-## Test Results
+## Our team Test results
 
-### Deployment Verification
+### Deployment 
 ✅ All contracts successfully deployed to Somnia Testnet
 ✅ Registry initialized with all contract addresses
 ✅ Inter-contract communication verified
 ✅ Network configuration validated
 
-### Token Creation Test
+### Token Creation 
 ✅ **Token Created:** Somnia Test Token (STEST)
 ✅ **Contract Address:** `0x9F954FFe9e14078BAfC96533335485C2D70D11b0`
 ✅ **Transaction Hash:** `0xca9eff1c35900f8608fdbe25c5385501ee10c7edbf21e82e4ce12958da7e8d1b`
 ✅ **Gas Used:** 20,609,022
 ✅ **Total Supply:** 1,000,000,000 STEST
 
-### Trading System Test
+### Trading System 
 ✅ **Bonding Curve Initialized:** Active and functional
 ✅ **Token Purchase Executed:** 10,000 STEST bought with 0.01 STT
 ✅ **Transaction Hash:** `0x2e11e99a9d92ee6b6b67f1df041a0de1091fdecec277e003c68b69bec4c00bb6`
@@ -183,40 +183,6 @@
 ✅ **Liquidity Locking:** 36 STT permanent lock mechanism ready
 ✅ **Market Graduation:** Contract validates graduation eligibility
 
-## Technical Stack
-
-### Frontend
-- **Framework:** React 18 with TypeScript
-- **Build Tool:** Vite 7.1.4
-- **Web3 Integration:** Wagmi + Viem
-- **UI Components:** Custom design system with Tailwind CSS
-- **State Management:** React hooks and context
-
-### Smart Contracts
-- **Language:** Solidity ^0.8.20
-- **Development:** Hardhat framework
-- **Libraries:** OpenZeppelin contracts
-- **Optimization:** Via IR compilation, 200 optimization runs
-
-### Blockchain
-- **Network:** Somnia Blockchain
-- **Consensus:** Proof of Stake
-- **Transaction Finality:** ~3-5 seconds
-- **Block Explorer:** Shannon Explorer
-
-## Security Features
-
-### Smart Contract Security
-- **Reentrancy Protection:** All state-changing functions protected
-- **Access Control:** Role-based permissions via OpenZeppelin
-- **Input Validation:** Comprehensive parameter validation
-- **Integer Overflow:** Solidity ^0.8.20 built-in protection
-
-### Frontend Security
-- **Network Enforcement:** Prevents transactions on wrong networks
-- **Input Sanitization:** All user inputs validated
-- **Connection Validation:** Wallet state verification
-- **Error Handling:** Graceful error management and user feedback
 
 ## Development Commands
 
