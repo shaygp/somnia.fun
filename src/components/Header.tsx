@@ -48,12 +48,15 @@ const Header = () => {
             <Button asChild variant="ghost" className="text-muted-foreground hover:text-primary">
               <Link to="/board">./board</Link>
             </Button>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="text-muted-foreground hover:text-primary"
               onClick={() => setShowCreateModal(true)}
             >
               ./create
+            </Button>
+            <Button asChild variant="ghost" className="text-muted-foreground hover:text-primary">
+              <Link to="/somnex">./somnex</Link>
             </Button>
             <Button asChild variant="ghost" className="text-muted-foreground hover:text-primary">
               <Link to="/portfolio">./portfolio</Link>

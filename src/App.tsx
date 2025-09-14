@@ -6,6 +6,7 @@ import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import TokenDetail from "./pages/TokenDetail";
 import Portfolio from "./pages/Portfolio";
+import Somnex from "./pages/Somnex";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -16,6 +17,7 @@ const App = () => (
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/board" element={<Index />} />
+        <Route path="/somnex" element={<Somnex />} />
         <Route path="/token/:tokenAddress" element={<TokenDetail />} />
         <Route path="/portfolio" element={<Portfolio />} />
         <Route path="*" element={<NotFound />} />

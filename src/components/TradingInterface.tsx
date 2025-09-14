@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowUpDown, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
+import { ArrowUpDown, TrendingUp, TrendingDown, Loader2, Rocket } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePumpFun, useTokenPrice, useTokenInfo, useTokenBalance } from "@/hooks/usePumpFun";
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi';
 import { Badge } from "@/components/ui/badge";
+import { useSomnexGraduation } from "@/hooks/useSomnex";
+import { Link } from "react-router-dom";
 
 interface TradingInterfaceProps {
   tokenAddress: string;
@@ -20,6 +22,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
   const { tokenInfo, isLoading: tokenInfoLoading } = useTokenInfo(tokenAddress);
   const { price } = useTokenPrice(tokenAddress);
   const { balance: tokenBalance } = useTokenBalance(tokenAddress);
+  const { canGraduate, sttCollected, isGraduated, graduateToken, listOnSomnex } = useSomnexGraduation(tokenAddress);
   
   const [activeTab, setActiveTab] = useState("buy");
   const [sttAmount, setSttAmount] = useState("");
@@ -158,19 +161,44 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span>Progress to DEX</span>
-            <span>{tokenInfo.graduatedToDeX ? "Graduated! 🎉" : `${tokenInfo.sttRaised}/80 STT`}</span>
+            <span>Progress to Somnex DEX</span>
+            <span>{tokenInfo.graduatedToDeX ? "Graduated to Somnex!" : `${tokenInfo.sttRaised}/80 STT`}</span>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
-            <div 
+            <div
               className="bg-primary h-2 rounded-full transition-all duration-300"
               style={{ width: `${Math.min(progressToGraduation, 100)}%` }}
             />
           </div>
           {tokenInfo.graduatedToDeX && (
-            <p className="text-xs text-muted-foreground">
-              This token has graduated to DEX! 36 STT locked permanently.
-            </p>
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                This token has graduated to Somnex DEX! 36 STT locked permanently.
+              </p>
+              <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/90">
+                <Link to="/somnex">
+                  <Rocket className="w-4 h-4 mr-2" />
+                  Trade on Somnex DEX
+                </Link>
+              </Button>
+            </div>
+          )}
+          {canGraduate && !tokenInfo.graduatedToDeX && (
+            <div className="space-y-2">
+              <p className="text-sm text-green-500 font-medium">
+                Ready to graduate to Somnex DEX!
+              </p>
+              <Button
+                onClick={async () => {
+                  await graduateToken();
+                  await listOnSomnex();
+                }}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                <Rocket className="w-4 h-4 mr-2" />
+                Graduate to Somnex
+              </Button>
+            </div>
           )}
         </div>
 

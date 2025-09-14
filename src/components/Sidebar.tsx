@@ -1,4 +1,4 @@
-import { Home, TrendingUp, Clock, Star, Plus, Settings, HelpCircle } from "lucide-react";
+import { Home, TrendingUp, Clock, Star, Plus, Settings, HelpCircle, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Link, useLocation } from "react-router-dom";
@@ -6,9 +6,10 @@ import SomniaLinks from "./SomniaLinks";
 
 const Sidebar = () => {
   const location = useLocation();
-  
+
   const navItems = [
     { icon: Home, label: "All Tokens", path: "/board", active: location.pathname === "/board" },
+    { icon: Rocket, label: "Somnex DEX", path: "/somnex", active: location.pathname === "/somnex" },
     { icon: TrendingUp, label: "Trending", path: "/board", count: 24 },
     { icon: Clock, label: "Recently Created", path: "/board", count: 156 },
     { icon: Star, label: "Favorites", path: "/board", count: 8 },
