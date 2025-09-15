@@ -3,14 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowUpDown, TrendingUp, TrendingDown, Loader2, Rocket } from "lucide-react";
+import { TrendingUp, TrendingDown, Loader2, Rocket } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { parseEther } from "viem";
 import { usePumpFun, useTokenPrice, useTokenInfo, useTokenBalance } from "@/hooks/usePumpFun";
-import { useAccount, useWaitForTransactionReceipt, useChainId, useSwitchChain } from 'wagmi';
+import { logTransaction, validateTransactionHash } from "@/utils/debug";
+import { useAccount, useWaitForTransactionReceipt, useChainId, useSwitchChain, useReadContract } from 'wagmi';
 import { somniaTestnetChain } from '@/config/wagmi';
-import { Badge } from "@/components/ui/badge";
+import { CONTRACT_ADDRESSES, MEME_TOKEN_ABI } from "@/config/contracts";
 import { useSomnexGraduation } from "@/hooks/useSomnex";
 import { Link } from "react-router-dom";
+import SuccessModal from "@/components/SuccessModal";
+import CurveInitializer from "@/components/CurveInitializer";
 
 interface TradingInterfaceProps {
   tokenAddress: string;
@@ -19,13 +23,23 @@ interface TradingInterfaceProps {
 export default function TradingInterface({ tokenAddress }: TradingInterfaceProps) {
   const { toast } = useToast();
   const { address, chain } = useAccount();
-  const chainId = useChainId();
   const { switchChain } = useSwitchChain();
   const { buyTokens, sellTokens, approveToken } = usePumpFun();
   const { tokenInfo, isLoading: tokenInfoLoading } = useTokenInfo(tokenAddress);
-  const { price } = useTokenPrice(tokenAddress);
+  const { price, error: priceError } = useTokenPrice(tokenAddress);
   const { balance: tokenBalance } = useTokenBalance(tokenAddress);
-  const { canGraduate, sttCollected, isGraduated, graduateToken, listOnSomnex } = useSomnexGraduation(tokenAddress);
+  
+  // Check token allowance for selling
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: tokenAddress as `0x${string}`,
+    abi: MEME_TOKEN_ABI,
+    functionName: 'allowance',
+    args: [address, CONTRACT_ADDRESSES.BONDING_CURVE],
+    query: {
+      enabled: !!address && !!tokenAddress && !!CONTRACT_ADDRESSES.BONDING_CURVE,
+    },
+  });
+  const { canGraduate, graduateToken, listOnSomnex } = useSomnexGraduation(tokenAddress);
   
   const [activeTab, setActiveTab] = useState("buy");
   const [sttAmount, setSttAmount] = useState("");
@@ -33,10 +47,37 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
   const [isTrading, setIsTrading] = useState(false);
   const [txHash, setTxHash] = useState("");
   const [needsApproval, setNeedsApproval] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successData, setSuccessData] = useState<{
+    title: string;
+    message: string;
+    txHash: string;
+    tokenInfo?: { name: string; symbol: string; amount?: string };
+    type: "buy" | "sell" | "create";
+  } | null>(null);
   
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+  const { isLoading: isConfirming, isSuccess, isError: txIsError, error: txError } = useWaitForTransactionReceipt({
     hash: txHash as `0x${string}`,
+    query: {
+      enabled: !!txHash && txHash !== "",
+    }
   });
+
+  // Handle transaction errors
+  useEffect(() => {
+    if (txIsError && txHash) {
+      console.error('Transaction failed:', txError);
+      setIsTrading(false);
+      setTxHash("");
+      
+      toast({
+        title: "Transaction Failed",
+        description: txError?.message || "Transaction was rejected or failed",
+        variant: "destructive"
+      });
+    }
+  }, [txIsError, txError, txHash, toast]);
 
   const handleNetworkSwitch = async () => {
     try {
@@ -70,7 +111,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
         description: "Please switch to Somnia Testnet to trade",
         variant: "destructive"
       });
-      await handleNetworkSwitch();
+      handleNetworkSwitch();
       return;
     }
 
@@ -79,21 +120,80 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
     setIsTrading(true);
 
     try {
-      const hash = await buyTokens(tokenAddress, sttAmount);
-      setTxHash(hash);
-
       toast({
         title: "Purchase Initiated",
-        description: "Waiting for transaction confirmation...",
+        description: `Buying ${sttAmount} STT worth of ${tokenInfo.symbol} tokens...`,
       });
+
+      const hash = await buyTokens(tokenAddress, sttAmount);
+      logTransaction('Buy Tokens', hash);
+      
+      const validatedHash = validateTransactionHash(hash);
+      if (validatedHash) {
+        setTxHash(validatedHash);
+        toast({
+          title: "Transaction Submitted",
+          description: `Waiting for confirmation... Hash: ${validatedHash.slice(0, 10)}...`,
+        });
+      } else {
+        console.error('Invalid transaction hash received from buyTokens');
+        toast({
+          title: "Transaction Error",
+          description: "Invalid transaction hash received. Please try again.",
+          variant: "destructive"
+        });
+        setIsTrading(false);
+        return;
+      }
 
     } catch (error: any) {
       console.error("Buy error:", error);
       toast({
         title: "Purchase Failed",
-        description: error?.message || "Failed to buy tokens",
+        description: error?.message?.includes('rejected') 
+          ? "Transaction was rejected by user"
+          : error?.message?.includes('insufficient') 
+          ? "Insufficient funds or allowance"
+          : error?.message || "Failed to buy tokens",
         variant: "destructive"
       });
+      setIsTrading(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!tokenAmount || !address) return;
+    
+    setIsApproving(true);
+    setIsTrading(true);
+    
+    try {
+      toast({
+        title: "Approval Required",
+        description: `Approving ${tokenAmount} ${tokenInfo.symbol} tokens for sale...`,
+      });
+
+      const approveHash = await approveToken(tokenAddress, tokenAmount);
+      logTransaction('Approve Tokens', approveHash);
+      
+      const validatedHash = validateTransactionHash(approveHash);
+      if (validatedHash) {
+        setTxHash(validatedHash);
+        toast({
+          title: "Approval Submitted",
+          description: `Waiting for approval confirmation... Hash: ${validatedHash.slice(0, 10)}...`,
+        });
+      } else {
+        throw new Error("Invalid transaction hash received from approveToken");
+      }
+    } catch (error: any) {
+      console.error("Approval error:", error);
+      toast({
+        title: "Approval Failed",
+        description: error?.message || "Failed to approve tokens",
+        variant: "destructive"
+      });
+      setIsApproving(false);
       setIsTrading(false);
     }
   };
@@ -114,7 +214,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
         description: "Please switch to Somnia Testnet to trade",
         variant: "destructive"
       });
-      await handleNetworkSwitch();
+      handleNetworkSwitch();
       return;
     }
 
@@ -123,29 +223,32 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
     setIsTrading(true);
 
     try {
-      if (needsApproval) {
-        const approveHash = await approveToken(tokenAddress, tokenAmount);
-        setTxHash(approveHash);
-        toast({
-          title: "Approval Initiated",
-          description: "Approving tokens for sale...",
-        });
-        return;
-      }
+      toast({
+        title: "Sale Initiated", 
+        description: `Selling ${tokenAmount} ${tokenInfo.symbol} tokens...`,
+      });
 
       const hash = await sellTokens(tokenAddress, tokenAmount);
-      setTxHash(hash);
-
-      toast({
-        title: "Sale Initiated",
-        description: "Waiting for transaction confirmation...",
-      });
+      logTransaction('Sell Tokens', hash);
+      
+      const validatedHash = validateTransactionHash(hash);
+      if (validatedHash) {
+        setTxHash(validatedHash);
+        toast({
+          title: "Transaction Submitted",
+          description: `Waiting for confirmation... Hash: ${validatedHash.slice(0, 10)}...`,
+        });
+      } else {
+        throw new Error("Invalid transaction hash received from sellTokens");
+      }
 
     } catch (error: any) {
       console.error("Sell error:", error);
       toast({
         title: "Sale Failed",
-        description: error?.message || "Failed to sell tokens",
+        description: error?.message?.includes('rejected')
+          ? "Transaction was rejected by user"
+          : error?.message || "Failed to sell tokens",
         variant: "destructive"
       });
       setIsTrading(false);
@@ -153,18 +256,76 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
   };
 
   useEffect(() => {
-    if (isSuccess) {
+    console.log('Transaction state:', { isSuccess, isConfirming, txIsError, txHash, isApproving });
+    
+    if (isSuccess && txHash && tokenInfo) {
+      console.log('Transaction confirmed successfully:', txHash);
+      
+      if (isApproving) {
+        // Approval confirmed, now proceed with sell
+        console.log('Approval confirmed, refetching allowance');
+        setIsApproving(false);
+        setTxHash("");
+        refetchAllowance();
+        toast({
+          title: "Approval Confirmed!",
+          description: "You can now sell your tokens",
+        });
+        setIsTrading(false);
+        return;
+      }
+      
+      // Regular buy/sell transaction confirmed
+      const isBuy = activeTab === "buy";
+      const title = isBuy ? "Purchase Successful!" : "Sale Successful!";
+      const message = isBuy 
+        ? `You have successfully purchased ${tokenInfo.symbol} tokens` 
+        : `You have successfully sold ${tokenInfo.symbol} tokens`;
+      const amount = isBuy 
+        ? `${sttAmount} STT → ${tokenInfo.symbol}` 
+        : `${tokenAmount} ${tokenInfo.symbol} → STT`;
+
+      setSuccessData({
+        title,
+        message,
+        txHash,
+        tokenInfo: {
+          name: tokenInfo.name,
+          symbol: tokenInfo.symbol,
+          amount
+        },
+        type: isBuy ? "buy" : "sell"
+      });
+      
+      console.log('Setting success modal to true');
+      setShowSuccessModal(true);
+
+      // Reset states
       setIsTrading(false);
       setTxHash("");
       setSttAmount("");
       setTokenAmount("");
-      
-      toast({
-        title: "Transaction Successful!",
-        description: activeTab === "buy" ? "Tokens purchased successfully" : "Tokens sold successfully",
-      });
+      setNeedsApproval(false);
+      setIsApproving(false);
     }
-  }, [isSuccess, activeTab, toast]);
+  }, [isSuccess, isConfirming, txIsError, activeTab, txHash, tokenInfo, sttAmount, tokenAmount, isApproving, toast, refetchAllowance]);
+
+  // Also handle stuck loading states - if transaction is taking too long
+  useEffect(() => {
+    if (isTrading && !txHash) {
+      // If we've been trading for more than 30 seconds without a tx hash, reset
+      const timeout = setTimeout(() => {
+        setIsTrading(false);
+        toast({
+          title: "Transaction Timeout",
+          description: "Transaction took too long. Please try again.",
+          variant: "destructive"
+        });
+      }, 30000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [isTrading, txHash, toast]);
 
   if (tokenInfoLoading) {
     return (
@@ -187,6 +348,11 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
         </CardContent>
       </Card>
     );
+  }
+
+  // Show error if there's a price error that's not just normal trading issues
+  if (priceError && !priceError.message.includes('getPrice')) {
+    console.log('TradingInterface - priceError:', priceError);
   }
 
   const progressToGraduation = tokenInfo.graduatedToDeX ?
@@ -216,6 +382,14 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
       </CardHeader>
 
       <CardContent className="space-y-6">
+        <CurveInitializer 
+          tokenAddress={tokenAddress} 
+          onInitialized={() => {
+            // Refresh the page or refetch data when curve is initialized
+            window.location.reload();
+          }} 
+        />
+        
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span>Progress to Somnex DEX</span>
@@ -262,7 +436,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
                       description: "Please switch to Somnia Testnet to graduate token",
                       variant: "destructive"
                     });
-                    await handleNetworkSwitch();
+                    handleNetworkSwitch();
                     return;
                   }
 
@@ -316,20 +490,40 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
                 </div>
               </div>
 
-              <Button 
-                onClick={handleBuy}
-                disabled={!sttAmount || isTrading || isConfirming || !address}
-                className="w-full bg-green-600 hover:bg-green-700"
-              >
-                {isTrading || isConfirming ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {isConfirming ? "Confirming..." : "Buying..."}
-                  </>
-                ) : (
-                  `Buy ${tokenInfo.symbol}`
+              <div className="space-y-2">
+                <Button 
+                  onClick={handleBuy}
+                  disabled={!sttAmount || isTrading || isConfirming || !address}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  {isTrading || isConfirming ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {isConfirming ? "Confirming..." : "Buying..."}
+                    </>
+                  ) : (
+                    `Buy ${tokenInfo.symbol}`
+                  )}
+                </Button>
+                
+                {(isTrading || isConfirming) && (
+                  <Button
+                    onClick={() => {
+                      setIsTrading(false);
+                      setTxHash("");
+                      toast({
+                        title: "Transaction Cancelled",
+                        description: "You can try again",
+                      });
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    Cancel
+                  </Button>
                 )}
-              </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="sell" className="space-y-4">
@@ -361,20 +555,60 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
                 </div>
               </div>
 
-              <Button 
-                onClick={handleSell}
-                disabled={!tokenAmount || isTrading || isConfirming || !address || parseFloat(tokenBalance) === 0}
-                className="w-full bg-red-600 hover:bg-red-700"
-              >
-                {isTrading || isConfirming ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {isConfirming ? "Confirming..." : needsApproval ? "Approving..." : "Selling..."}
-                  </>
+              <div className="space-y-2">
+                {/* Check if approval is needed */}
+                {tokenAmount && allowance && parseFloat(tokenAmount) > 0 && 
+                 (BigInt(allowance as string) < parseEther(tokenAmount)) ? (
+                  <Button 
+                    onClick={handleApprove}
+                    disabled={!tokenAmount || isTrading || isConfirming || !address}
+                    className="w-full bg-yellow-600 hover:bg-yellow-700"
+                  >
+                    {isApproving || isConfirming ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {isConfirming ? "Confirming..." : "Approving..."}
+                      </>
+                    ) : (
+                      `Approve ${tokenInfo.symbol} for Sale`
+                    )}
+                  </Button>
                 ) : (
-                  `Sell ${tokenInfo.symbol}`
+                  <Button 
+                    onClick={handleSell}
+                    disabled={!tokenAmount || isTrading || isConfirming || !address || parseFloat(tokenBalance) === 0}
+                    className="w-full bg-red-600 hover:bg-red-700"
+                  >
+                    {isTrading || isConfirming ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {isConfirming ? "Confirming..." : "Selling..."}
+                      </>
+                    ) : (
+                      `Sell ${tokenInfo.symbol}`
+                    )}
+                  </Button>
                 )}
-              </Button>
+
+                {(isTrading || isConfirming) && (
+                  <Button
+                    onClick={() => {
+                      setIsTrading(false);
+                      setTxHash("");
+                      setNeedsApproval(false);
+                      toast({
+                        title: "Transaction Cancelled",
+                        description: "You can try again",
+                      });
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         )}
@@ -383,6 +617,23 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
           <p>Platform Fee: 1% | Creator Fee: 1%</p>
         </div>
       </CardContent>
+      
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => {
+          setShowSuccessModal(false);
+          setSuccessData(null);
+          // Refresh data after modal is closed
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        }}
+        title={successData?.title || ""}
+        message={successData?.message || ""}
+        txHash={successData?.txHash}
+        tokenInfo={successData?.tokenInfo}
+        type={successData?.type || "buy"}
+      />
     </Card>
   );
 }

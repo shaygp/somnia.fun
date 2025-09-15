@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { usePumpFun } from "@/hooks/usePumpFun";
 import { useWaitForTransactionReceipt, useAccount, useChainId, useSwitchChain } from 'wagmi';
 import { somniaTestnetChain } from '@/config/wagmi';
+import SuccessModal from "@/components/SuccessModal";
+import { logTransaction, validateTransactionHash } from "@/utils/debug";
 
 interface CreateTokenModalProps {
   isOpen: boolean;
@@ -19,7 +21,7 @@ interface CreateTokenModalProps {
 
 const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
   const { toast } = useToast();
-  const { createToken } = usePumpFun();
+  const { createToken, initializeCurve } = usePumpFun();
   const { address, isConnected, chain } = useAccount();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
@@ -27,6 +29,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
   const [isCreating, setIsCreating] = useState(false);
   const [txHash, setTxHash] = useState<string>("");
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     symbol: "",
@@ -38,7 +41,9 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
 
   const { isLoading: isConfirming, isSuccess, isError } = useWaitForTransactionReceipt({
     hash: txHash as `0x${string}`,
-    enabled: !!txHash,
+    query: {
+      enabled: !!txHash && txHash !== "",
+    },
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -106,15 +111,18 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
         formData.description
       );
 
-      if (hash) {
-        setTxHash(hash);
+      logTransaction('Create Token', hash);
+      
+      const validatedHash = validateTransactionHash(hash);
+      if (validatedHash) {
+        setTxHash(validatedHash);
         setStatusMessage("Transaction submitted! Waiting for confirmation...");
         toast({
           title: "Token Creation Initiated",
-          description: `Transaction hash: ${hash.slice(0, 10)}...${hash.slice(-8)}`,
+          description: `Transaction hash: ${validatedHash.slice(0, 10)}...`,
         });
       } else {
-        throw new Error("No transaction hash received");
+        throw new Error("Invalid transaction hash received from createToken");
       }
 
     } catch (error: any) {
@@ -133,28 +141,18 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
 
   useEffect(() => {
     if (isSuccess && step === 2) {
+      console.log('Token creation confirmed:', txHash);
       setStep(3);
       setStatusMessage("Token created successfully!");
-      toast({
-        title: "Token Created Successfully!",
-        description: `${formData.name} (${formData.symbol}) is now live on Somnia`,
-      });
-
+      
+      // Show success modal instead of toast
+      setShowSuccessModal(true);
+      
+      // Reset states after a short delay
       setTimeout(() => {
         setIsCreating(false);
         setStep(1);
-        setTxHash("");
-        setStatusMessage("");
-        setFormData({
-          name: "",
-          symbol: "",
-          description: "",
-          imageUri: "",
-          initialPrice: "0.0001",
-          creationFee: "0.1"
-        });
-        onClose();
-      }, 3000);
+      }, 1000);
     }
 
     if (isError && step === 2) {
@@ -171,7 +169,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
         setStatusMessage("");
       }, 2000);
     }
-  }, [isSuccess, isError, step, formData, toast, onClose]);
+  }, [isSuccess, isError, step, toast, txHash]);
 
   const renderStep1 = () => (
     <div className="space-y-6">
@@ -387,6 +385,33 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
+        
+        <SuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => {
+            setShowSuccessModal(false);
+            setTxHash("");
+            setStatusMessage("");
+            setFormData({
+              name: "",
+              symbol: "",
+              description: "",
+              imageUri: "",
+              initialPrice: "0.0001",
+              creationFee: "0.1"
+            });
+            onClose();
+          }}
+          title="Token Created Successfully!"
+          message={`${formData.name} (${formData.symbol}) is now live on Somnia blockchain with bonding curve mechanics.`}
+          txHash={txHash}
+          tokenInfo={{
+            name: formData.name,
+            symbol: formData.symbol,
+            amount: "1,000,000,000 tokens"
+          }}
+          type="create"
+        />
       </DialogContent>
     </Dialog>
   );

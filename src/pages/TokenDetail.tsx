@@ -9,15 +9,21 @@ import TradingInterface from "@/components/TradingInterface";
 import ActivityFeed from "@/components/ActivityFeed";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTokenInfo, useTokenPrice } from "@/hooks/usePumpFun";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
 
 const TokenDetail = () => {
   const { tokenAddress } = useParams();
   const navigate = useNavigate();
-  const { tokenInfo, isLoading: tokenInfoLoading } = useTokenInfo(tokenAddress || "");
-  const { price, isLoading: priceLoading } = useTokenPrice(tokenAddress || "");
+  const { tokenInfo, isLoading: tokenInfoLoading, error: tokenInfoError } = useTokenInfo(tokenAddress || "");
+  const { price, isLoading: priceLoading, error: priceError } = useTokenPrice(tokenAddress || "");
   
   const isDemoToken = tokenAddress === '0x1234567890123456789012345678901234567890';
+
+  console.log('TokenDetail - tokenAddress:', tokenAddress, 'isDemoToken:', isDemoToken);
+  console.log('TokenDetail - tokenInfoLoading:', tokenInfoLoading, 'priceLoading:', priceLoading);
+  console.log('TokenDetail - tokenInfo:', tokenInfo, 'price:', price);
+  console.log('TokenDetail - errors:', { tokenInfoError, priceError });
   
   const demoTokenInfo = {
     name: "Somnia Cat",
@@ -34,36 +40,74 @@ const TokenDetail = () => {
   };
   
   const displayTokenInfo = isDemoToken ? demoTokenInfo : tokenInfo;
-  const displayPrice = isDemoToken ? "0.000005" : price;
+  const displayPrice = isDemoToken ? "0.000005" : (price || "0");
   
   if (!tokenAddress) {
     return <div>Token not found</div>;
   }
 
-  if (!isDemoToken && (tokenInfoLoading || priceLoading)) {
-    return (
-      <div className="min-h-screen bg-somnia-bg text-foreground relative flex items-center justify-center">
-        <AnimatedBackground />
-        <div className="flex items-center space-x-2 relative z-10">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <span>Loading token data...</span>
+  // For demo token, skip loading checks
+  if (!isDemoToken) {
+    // Show loading state only if both are still loading and no errors
+    if ((tokenInfoLoading || priceLoading) && !tokenInfoError && !priceError) {
+      return (
+        <div className="min-h-screen bg-somnia-bg text-foreground relative flex items-center justify-center">
+          <AnimatedBackground />
+          <div className="flex flex-col items-center space-y-4 relative z-10">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span>Loading token data...</span>
+            <div className="text-sm text-muted-foreground text-center">
+              <p>Fetching from blockchain...</p>
+              <p className="font-mono text-xs mt-1">{tokenAddress?.slice(0, 8)}...{tokenAddress?.slice(-6)}</p>
+            </div>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (!isDemoToken && !tokenInfo) {
-    return (
-      <div className="min-h-screen bg-somnia-bg text-foreground relative flex items-center justify-center">
-        <AnimatedBackground />
-        <div className="relative z-10">
-          <p>Token not found</p>
-          <Button onClick={() => navigate('/board')} className="mt-4">
-            Back to Board
-          </Button>
+    // Show error state only for critical tokenInfo errors, not price errors
+    if (tokenInfoError) {
+      return (
+        <div className="min-h-screen bg-somnia-bg text-foreground relative flex items-center justify-center">
+          <AnimatedBackground />
+          <div className="relative z-10 text-center">
+            <h2 className="text-xl font-bold text-red-500 mb-4">Error Loading Token</h2>
+            <p className="text-muted-foreground mb-4">
+              {tokenInfoError?.message || 'Failed to load token data'}
+            </p>
+            <div className="space-x-3">
+              <Button onClick={() => window.location.reload()} variant="outline">
+                Retry
+              </Button>
+              <Button onClick={() => navigate('/board')}>
+                Back to Board
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+    // If only price error (curve not initialized), continue to show the page
+    // The TradingInterface will handle the curve initialization
+
+    // Show "not found" state if loading is complete but no token info
+    if (!tokenInfoLoading && !priceLoading && !tokenInfo) {
+      return (
+        <div className="min-h-screen bg-somnia-bg text-foreground relative flex items-center justify-center">
+          <AnimatedBackground />
+          <div className="relative z-10 text-center">
+            <h2 className="text-xl font-bold mb-4">Token Not Found</h2>
+            <p className="text-muted-foreground mb-4">
+              This token might not exist or hasn't been deployed yet.
+            </p>
+            <Button onClick={() => navigate('/board')}>
+              Back to Board
+            </Button>
+          </div>
+        </div>
+      );
+    }
   }
 
   const handleBack = () => {
@@ -71,10 +115,11 @@ const TokenDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-somnia-bg text-foreground relative">
-      <AnimatedBackground />
-      
-      <div className="container mx-auto px-4 py-8 relative z-10">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-somnia-bg text-foreground relative">
+        <AnimatedBackground />
+        
+        <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
@@ -145,7 +190,7 @@ const TokenDetail = () => {
               tokenSymbol={displayTokenInfo.symbol}
               currentSupply={parseFloat(displayTokenInfo.tokensSold)}
               currentPrice={parseFloat(displayPrice)}
-              liquidityPooled={displayTokenInfo.graduatedToDeX}
+              liquidityPooled={displayTokenInfo.graduatedToDeX ? 1 : (parseFloat(displayTokenInfo.sttRaised) / 1000)}
             />
 
             {/* Token Information */}
@@ -234,14 +279,28 @@ const TokenDetail = () => {
           {/* Right Column - Trading and Activity */}
           <div className="space-y-8">
             {/* Trading Interface */}
-            <TradingInterface tokenAddress={tokenAddress} />
+            <ErrorBoundary fallback={
+              <div className="p-4 border border-red-500/20 rounded bg-red-500/5 text-center">
+                <p className="text-red-500">Error loading trading interface</p>
+                <p className="text-sm text-muted-foreground mt-2">Please refresh the page to try again.</p>
+              </div>
+            }>
+              <TradingInterface tokenAddress={tokenAddress} />
+            </ErrorBoundary>
 
             {/* Activity Feed */}
-            <ActivityFeed />
+            <ErrorBoundary fallback={
+              <div className="p-4 border border-red-500/20 rounded bg-red-500/5 text-center">
+                <p className="text-red-500">Error loading activity feed</p>
+              </div>
+            }>
+              <ActivityFeed />
+            </ErrorBoundary>
           </div>
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 };
 

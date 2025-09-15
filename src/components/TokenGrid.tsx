@@ -25,10 +25,12 @@ interface TokenData {
 }
 
 const TokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
-  const { tokenInfo } = useTokenInfo(tokenAddress);
-  const { price } = useTokenPrice(tokenAddress);
+  const { tokenInfo, isLoading: tokenInfoLoading, error: tokenInfoError } = useTokenInfo(tokenAddress);
+  const { price, isLoading: priceLoading, error: priceError } = useTokenPrice(tokenAddress);
 
   const isDemoToken = tokenAddress === '0x1234567890123456789012345678901234567890';
+
+  console.log('TokenItem - tokenAddress:', tokenAddress, 'tokenInfo:', tokenInfo, 'error:', tokenInfoError);
 
   const demoTokenInfo = {
     name: "Somnia Cat",
@@ -40,10 +42,35 @@ const TokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
     graduatedToDeX: false
   };
 
+  // Handle errors for real tokens
+  if (!isDemoToken && tokenInfoError) {
+    console.error('TokenItem error for', tokenAddress, tokenInfoError);
+    return (
+      <div className="p-4 border border-red-500/20 rounded-lg bg-red-500/5">
+        <p className="text-red-500 text-sm">Failed to load token: {tokenAddress.slice(0, 8)}...</p>
+        <p className="text-xs text-muted-foreground mt-1">{tokenInfoError.message}</p>
+      </div>
+    );
+  }
+
+  // Handle loading state for real tokens
+  if (!isDemoToken && tokenInfoLoading) {
+    return (
+      <div className="p-4 border border-somnia-border rounded-lg bg-somnia-card animate-pulse">
+        <div className="h-4 bg-gray-600 rounded mb-2"></div>
+        <div className="h-3 bg-gray-700 rounded"></div>
+      </div>
+    );
+  }
+
   const displayTokenInfo = isDemoToken ? demoTokenInfo : tokenInfo;
   const displayPrice = isDemoToken ? "0.000005" : price;
   
-  if (!displayTokenInfo) return null;
+  // Don't render if we don't have token info for real tokens
+  if (!isDemoToken && !displayTokenInfo) {
+    console.log('TokenItem - no tokenInfo for non-demo token:', tokenAddress);
+    return null;
+  }
 
   const tokenData: TokenData = {
     address: tokenAddress,
@@ -79,7 +106,7 @@ interface TokenGridProps {
 
 const TokenGrid = ({ filter }: TokenGridProps) => {
   const [activeTab, setActiveTab] = useState(filter || "all");
-  const { tokens, isLoading } = useAllTokens();
+  const { tokens, isLoading, error, refetch } = useAllTokens();
 
   React.useEffect(() => {
     if (filter) {
@@ -102,8 +129,18 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
 
   const demoTokens = ['0x1234567890123456789012345678901234567890'];
 
+  console.log('TokenGrid - tokens:', tokens, 'isLoading:', isLoading, 'error:', error);
+
   const filteredTokens = React.useMemo(() => {
+    // Always show the demo token, and add real tokens if they exist
     const allTokens = tokens && tokens.length > 0 ? [...demoTokens, ...tokens] : demoTokens;
+    
+    console.log('TokenGrid - filteredTokens calculation:', {
+      tokens,
+      tokensLength: tokens?.length,
+      demoTokens,
+      allTokens
+    });
 
     switch (activeTab) {
       case "trending":
@@ -116,6 +153,39 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
         return allTokens;
     }
   }, [tokens, activeTab]);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6 relative scan-lines">
+        <div className="flex items-center justify-center py-12 border border-somnia-border rounded bg-somnia-card">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="ml-3 text-muted-foreground">Loading tokens from blockchain...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6 relative scan-lines">
+        <div className="text-center py-12 border border-somnia-border rounded bg-somnia-card">
+          <p className="text-red-500 mb-4">Error loading tokens: {error.message}</p>
+          <p className="text-muted-foreground text-sm mb-4">
+            Make sure you're connected to Somnia Testnet and the contracts are deployed.
+          </p>
+          <Button 
+            onClick={() => refetch()} 
+            variant="outline" 
+            className="border-somnia-border hover:bg-somnia-hover"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 relative scan-lines">
@@ -165,7 +235,7 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredTokens.map((tokenAddress, index) => (
+              {filteredTokens.map((tokenAddress) => (
                 <TokenItem key={tokenAddress} tokenAddress={tokenAddress} />
               ))}
             </div>
@@ -179,7 +249,7 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredTokens.map((tokenAddress, index) => (
+              {filteredTokens.map((tokenAddress) => (
                 <TokenItem key={tokenAddress} tokenAddress={tokenAddress} />
               ))}
             </div>
@@ -193,7 +263,7 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredTokens.map((tokenAddress, index) => (
+              {filteredTokens.map((tokenAddress) => (
                 <TokenItem key={tokenAddress} tokenAddress={tokenAddress} />
               ))}
             </div>
@@ -207,7 +277,7 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredTokens.map((tokenAddress, index) => (
+              {filteredTokens.map((tokenAddress) => (
                 <TokenItem key={tokenAddress} tokenAddress={tokenAddress} />
               ))}
             </div>

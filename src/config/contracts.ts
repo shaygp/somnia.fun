@@ -145,49 +145,32 @@ export const TOKEN_FACTORY_ABI = [
 export const BONDING_CURVE_ABI = [
   {
     "inputs": [
-      {"internalType": "address", "name": "user", "type": "address"},
       {"internalType": "address", "name": "token", "type": "address"},
+      {"internalType": "address", "name": "user", "type": "address"},
       {"internalType": "uint256", "name": "sttAmount", "type": "uint256"}
     ],
     "name": "buyTokens",
-    "outputs": [{"internalType": "uint256", "name": "tokensOut", "type": "uint256"}],
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [
-      {"internalType": "address", "name": "user", "type": "address"},
       {"internalType": "address", "name": "token", "type": "address"},
+      {"internalType": "address", "name": "user", "type": "address"},
       {"internalType": "uint256", "name": "tokenAmount", "type": "uint256"}
     ],
     "name": "sellTokens",
-    "outputs": [{"internalType": "uint256", "name": "sttOut", "type": "uint256"}],
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
-    "name": "getCurrentPrice",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {"internalType": "address", "name": "token", "type": "address"},
-      {"internalType": "uint256", "name": "sttAmount", "type": "uint256"}
+      {"internalType": "uint256", "name": "amount", "type": "uint256"}
     ],
-    "name": "calculateTokensOut",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {"internalType": "address", "name": "token", "type": "address"},
-      {"internalType": "uint256", "name": "tokenAmount", "type": "uint256"}
-    ],
-    "name": "calculateSttOut",
+    "name": "getPrice",
     "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "view",
     "type": "function"
@@ -196,13 +179,34 @@ export const BONDING_CURVE_ABI = [
     "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
     "name": "getCurveInfo",
     "outputs": [
-      {"internalType": "uint256", "name": "virtualStt", "type": "uint256"},
-      {"internalType": "uint256", "name": "virtualTokens", "type": "uint256"},
-      {"internalType": "uint256", "name": "sttCollected", "type": "uint256"},
-      {"internalType": "uint256", "name": "tokensSold", "type": "uint256"},
-      {"internalType": "bool", "name": "active", "type": "bool"},
-      {"internalType": "bool", "name": "graduated", "type": "bool"}
+      {
+        "components": [
+          {"internalType": "uint256", "name": "soldSupply", "type": "uint256"},
+          {"internalType": "uint256", "name": "sttCollected", "type": "uint256"},
+          {"internalType": "uint256", "name": "virtualSttReserves", "type": "uint256"},
+          {"internalType": "uint256", "name": "virtualTokenReserves", "type": "uint256"},
+          {"internalType": "bool", "name": "graduated", "type": "bool"},
+          {"internalType": "bool", "name": "active", "type": "bool"}
+        ],
+        "internalType": "struct BondingCurveContract.TokenCurve",
+        "name": "",
+        "type": "tuple"
+      }
     ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
+    "name": "initializeCurve",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
+    "name": "getTokenBalance",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "view",
     "type": "function"
   },
@@ -210,24 +214,24 @@ export const BONDING_CURVE_ABI = [
     "anonymous": false,
     "inputs": [
       {"indexed": true, "internalType": "address", "name": "token", "type": "address"},
-      {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "sttAmount", "type": "uint256"},
+      {"indexed": true, "internalType": "address", "name": "buyer", "type": "address"},
+      {"indexed": false, "internalType": "uint256", "name": "sttIn", "type": "uint256"},
       {"indexed": false, "internalType": "uint256", "name": "tokensOut", "type": "uint256"},
       {"indexed": false, "internalType": "uint256", "name": "newPrice", "type": "uint256"}
     ],
-    "name": "TokensPurchased",
+    "name": "TokenBought",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
       {"indexed": true, "internalType": "address", "name": "token", "type": "address"},
-      {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
+      {"indexed": true, "internalType": "address", "name": "seller", "type": "address"},
       {"indexed": false, "internalType": "uint256", "name": "tokensIn", "type": "uint256"},
       {"indexed": false, "internalType": "uint256", "name": "sttOut", "type": "uint256"},
       {"indexed": false, "internalType": "uint256", "name": "newPrice", "type": "uint256"}
     ],
-    "name": "TokensSold",
+    "name": "TokenSold",
     "type": "event"
   }
 ];
