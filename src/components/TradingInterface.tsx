@@ -25,9 +25,9 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
   const { address, chain } = useAccount();
   const { switchChain } = useSwitchChain();
   const { buyTokens, sellTokens, approveToken } = usePumpFun();
-  const { tokenInfo, isLoading: tokenInfoLoading } = useTokenInfo(tokenAddress);
+  const { tokenInfo, isLoading: tokenInfoLoading, refetch: refetchTokenInfo } = useTokenInfo(tokenAddress);
   const { price, error: priceError } = useTokenPrice(tokenAddress);
-  const { balance: tokenBalance } = useTokenBalance(tokenAddress);
+  const { balance: tokenBalance, refetch: refetchBalance } = useTokenBalance(tokenAddress);
   
   // Check token allowance for selling
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
@@ -64,20 +64,21 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
     }
   });
 
-  // Handle transaction errors
   useEffect(() => {
-    if (txIsError && txHash) {
+    if (txIsError && txHash && !isSuccess) {
       console.error('Transaction failed:', txError);
       setIsTrading(false);
       setTxHash("");
-      
-      toast({
-        title: "Transaction Failed",
-        description: txError?.message || "Transaction was rejected or failed",
-        variant: "destructive"
-      });
+
+      if (txError && !txError.message?.includes('user rejected')) {
+        toast({
+          title: "Transaction Failed",
+          description: txError?.message || "Transaction failed on blockchain",
+          variant: "destructive"
+        });
+      }
     }
-  }, [txIsError, txError, txHash, toast]);
+  }, [txIsError, txError, txHash, toast, isSuccess]);
 
   const handleNetworkSwitch = async () => {
     try {
@@ -148,15 +149,23 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
 
     } catch (error: any) {
       console.error("Buy error:", error);
-      toast({
-        title: "Purchase Failed",
-        description: error?.message?.includes('rejected') 
-          ? "Transaction was rejected by user"
-          : error?.message?.includes('insufficient') 
-          ? "Insufficient funds or allowance"
-          : error?.message || "Failed to buy tokens",
-        variant: "destructive"
-      });
+
+      if (error?.message?.includes('rejected') || error?.message?.includes('denied') || error?.message?.includes('cancelled')) {
+        toast({
+          title: "Transaction Cancelled",
+          description: "Transaction was rejected by user",
+          variant: "destructive"
+        });
+      } else if (error?.message?.includes('insufficient')) {
+        toast({
+          title: "Insufficient Funds",
+          description: "Insufficient funds or allowance",
+          variant: "destructive"
+        });
+      } else {
+        console.log("Buy error details:", error);
+      }
+
       setIsTrading(false);
     }
   };
@@ -188,11 +197,17 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
       }
     } catch (error: any) {
       console.error("Approval error:", error);
-      toast({
-        title: "Approval Failed",
-        description: error?.message || "Failed to approve tokens",
-        variant: "destructive"
-      });
+
+      if (error?.message?.includes('rejected') || error?.message?.includes('denied') || error?.message?.includes('cancelled')) {
+        toast({
+          title: "Approval Cancelled",
+          description: "Transaction was rejected by user",
+          variant: "destructive"
+        });
+      } else {
+        console.log("Approval error details:", error);
+      }
+
       setIsApproving(false);
       setIsTrading(false);
     }
@@ -244,13 +259,23 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
 
     } catch (error: any) {
       console.error("Sell error:", error);
-      toast({
-        title: "Sale Failed",
-        description: error?.message?.includes('rejected')
-          ? "Transaction was rejected by user"
-          : error?.message || "Failed to sell tokens",
-        variant: "destructive"
-      });
+
+      if (error?.message?.includes('rejected') || error?.message?.includes('denied') || error?.message?.includes('cancelled')) {
+        toast({
+          title: "Transaction Cancelled",
+          description: "Transaction was rejected by user",
+          variant: "destructive"
+        });
+      } else if (error?.message?.includes('insufficient')) {
+        toast({
+          title: "Insufficient Allowance",
+          description: "Insufficient token allowance for sale",
+          variant: "destructive"
+        });
+      } else {
+        console.log("Sell error details:", error);
+      }
+
       setIsTrading(false);
     }
   };
@@ -262,11 +287,15 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
       console.log('Transaction confirmed successfully:', txHash);
       
       if (isApproving) {
-        // Approval confirmed, now proceed with sell
         console.log('Approval confirmed, refetching allowance');
         setIsApproving(false);
         setTxHash("");
-        refetchAllowance();
+
+        setTimeout(() => {
+          refetchAllowance();
+          refetchTokenInfo();
+        }, 1000);
+
         toast({
           title: "Approval Confirmed!",
           description: "You can now sell your tokens",
@@ -307,6 +336,12 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
       setTokenAmount("");
       setNeedsApproval(false);
       setIsApproving(false);
+
+      setTimeout(() => {
+        refetchBalance();
+        refetchAllowance();
+        refetchTokenInfo();
+      }, 2000);
     }
   }, [isSuccess, isConfirming, txIsError, activeTab, txHash, tokenInfo, sttAmount, tokenAmount, isApproving, toast, refetchAllowance]);
 
@@ -385,8 +420,10 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
         <CurveInitializer 
           tokenAddress={tokenAddress} 
           onInitialized={() => {
-            // Refresh the page or refetch data when curve is initialized
-            window.location.reload();
+            setTimeout(() => {
+              refetchAllowance();
+              refetchTokenInfo();
+            }, 2000);
           }} 
         />
         
@@ -556,8 +593,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
               </div>
 
               <div className="space-y-2">
-                {/* Check if approval is needed */}
-                {tokenAmount && allowance && parseFloat(tokenAmount) > 0 && 
+                {tokenAmount && parseFloat(tokenAmount) > 0 && allowance !== undefined &&
                  (BigInt(allowance as string) < parseEther(tokenAmount)) ? (
                   <Button 
                     onClick={handleApprove}
@@ -623,10 +659,10 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
         onClose={() => {
           setShowSuccessModal(false);
           setSuccessData(null);
-          // Refresh data after modal is closed
           setTimeout(() => {
-            window.location.reload();
-          }, 500);
+            refetchAllowance();
+            refetchTokenInfo();
+          }, 1000);
         }}
         title={successData?.title || ""}
         message={successData?.message || ""}

@@ -275,7 +275,7 @@ export const useTokenPrice = (tokenAddress: string) => {
 export const useTokenInfo = (tokenAddress: string) => {
   const isDemoToken = tokenAddress === '0x1234567890123456789012345678901234567890';
   
-  const { data: tokenInfo, isLoading: tokenLoading, error: tokenError } = useReadContract({
+  const { data: tokenInfo, isLoading: tokenLoading, error: tokenError, refetch: refetchTokenInfo } = useReadContract({
     address: CONTRACT_ADDRESSES.TOKEN_FACTORY as `0x${string}`,
     abi: TOKEN_FACTORY_ABI,
     functionName: 'getTokenMetadata',
@@ -286,7 +286,7 @@ export const useTokenInfo = (tokenAddress: string) => {
     },
   });
 
-  const { data: curveInfo, isLoading: curveLoading, error: curveError } = useReadContract({
+  const { data: curveInfo, isLoading: curveLoading, error: curveError, refetch: refetchCurveInfo } = useReadContract({
     address: CONTRACT_ADDRESSES.BONDING_CURVE as `0x${string}`,
     abi: BONDING_CURVE_ABI,
     functionName: 'getCurveInfo',
@@ -297,7 +297,7 @@ export const useTokenInfo = (tokenAddress: string) => {
     },
   });
 
-  const { data: isGraduated, error: graduationError } = useReadContract({
+  const { data: isGraduated, error: graduationError, refetch: refetchGraduation } = useReadContract({
     address: CONTRACT_ADDRESSES.MARKET_GRADUATION as `0x${string}`,
     abi: MARKET_GRADUATION_ABI,
     functionName: 'isGraduated',
@@ -344,6 +344,11 @@ export const useTokenInfo = (tokenAddress: string) => {
       },
       isLoading: tokenLoading || curveLoading,
       error: tokenError,
+      refetch: () => {
+        refetchTokenInfo();
+        refetchCurveInfo();
+        refetchGraduation();
+      },
     };
   }
 
@@ -352,6 +357,11 @@ export const useTokenInfo = (tokenAddress: string) => {
     tokenInfo: null,
     isLoading: tokenLoading || curveLoading,
     error: tokenError || (tokenLoading ? null : new Error('Token not found in factory')),
+    refetch: () => {
+      refetchTokenInfo();
+      refetchCurveInfo();
+      refetchGraduation();
+    },
   };
 };
 
@@ -389,7 +399,7 @@ export const useTokenBalance = (tokenAddress: string, userAddress?: string) => {
   const { address } = useAccount();
   const targetAddress = userAddress || address;
 
-  const { data: balance, isLoading, error } = useReadContract({
+  const { data: balance, isLoading, error, refetch } = useReadContract({
     address: tokenAddress as `0x${string}`,
     abi: MEME_TOKEN_ABI,
     functionName: 'balanceOf',
@@ -403,6 +413,7 @@ export const useTokenBalance = (tokenAddress: string, userAddress?: string) => {
     balance: balance ? formatEther(balance as bigint) : '0',
     isLoading,
     error,
+    refetch,
   };
 };
 

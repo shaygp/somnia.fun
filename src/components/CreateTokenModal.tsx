@@ -39,7 +39,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
     creationFee: "0.1"
   });
 
-  const { isLoading: isConfirming, isSuccess, isError } = useWaitForTransactionReceipt({
+  const { isLoading: isConfirming, isSuccess, isError, error: txError } = useWaitForTransactionReceipt({
     hash: txHash as `0x${string}`,
     query: {
       enabled: !!txHash && txHash !== "",
@@ -155,13 +155,15 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
       }, 1000);
     }
 
-    if (isError && step === 2) {
+    if (isError && step === 2 && !isSuccess) {
       setStatusMessage("Transaction failed. Please try again.");
-      toast({
-        title: "Transaction Failed",
-        description: "The token creation transaction failed. Please try again.",
-        variant: "destructive"
-      });
+      if (txError && !txError.message?.includes('user rejected')) {
+        toast({
+          title: "Transaction Failed",
+          description: txError?.message || "The token creation transaction failed. Please try again.",
+          variant: "destructive"
+        });
+      }
       setTimeout(() => {
         setIsCreating(false);
         setStep(1);
@@ -169,7 +171,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
         setStatusMessage("");
       }, 2000);
     }
-  }, [isSuccess, isError, step, toast, txHash]);
+  }, [isSuccess, isError, step, toast, txHash, txError]);
 
   const renderStep1 = () => (
     <div className="space-y-6">

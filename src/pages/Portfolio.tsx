@@ -7,7 +7,9 @@ import { Link } from "react-router-dom";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import StatsCards from "@/components/StatsCards";
 import { useAccount } from 'wagmi';
-import { useAllTokens, useTokenBalance } from "@/hooks/usePumpFun";
+import { useAllTokens, useTokenBalance, useTokenInfo, useTokenPrice } from "@/hooks/usePumpFun";
+import { useState, useEffect, useCallback } from "react";
+import CreateTokenModal from "@/components/CreateTokenModal";
 
 // Define colors for tokens
 const tokenColors = [
@@ -19,39 +21,66 @@ const tokenColors = [
   { accent: "text-somnia-blue", bg: "bg-blue-500/20", border: "border-blue-500/30" },
 ];
 
-const Portfolio = () => {
-  const portfolioTokens = [
-    {
-      name: "Pepe Coin",
-      symbol: "PEPE",
-      image: "/catlayer.svg",
-      balance: "1,250,000",
-      value: "$2,847.50",
-      change24h: 15.6,
-      invested: "$2,200.00",
-      pnl: "$647.50"
-    },
-    {
-      name: "Layer Dog",
-      symbol: "LDOG",
-      image: "/catlayer.svg",
-      balance: "500,000",
-      value: "$1,234.75",
-      change24h: -3.2,
-      invested: "$1,400.00",
-      pnl: "-$165.25"
-    },
-    {
-      name: "Moon Shot",
-      symbol: "MOON",
-      image: "/catlayer.svg",
-      balance: "75,000",
-      value: "$892.15",
-      change24h: 8.9,
-      invested: "$750.00",
-      pnl: "$142.15"
+const UserTokenItem = ({ tokenAddress, colorTheme, onValueUpdate }) => {
+  const { tokenInfo } = useTokenInfo(tokenAddress);
+  const { balance } = useTokenBalance(tokenAddress);
+  const { price } = useTokenPrice(tokenAddress);
+
+  const balanceNum = parseFloat(balance);
+  const priceNum = parseFloat(price);
+  const value = balanceNum * priceNum;
+
+  useEffect(() => {
+    if (onValueUpdate && tokenInfo && balanceNum > 0) {
+      onValueUpdate(tokenAddress, value);
     }
-  ];
+  }, [value, tokenInfo, balanceNum, onValueUpdate, tokenAddress]);
+
+  if (balanceNum === 0 || !tokenInfo) return null;
+
+  return (
+    <Card className={`bg-somnia-card border-somnia-border p-6 hover:shadow-somnia-glow transition-all duration-300 ${colorTheme.border} hover:${colorTheme.border}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className={`p-2 rounded-lg ${colorTheme.bg}`}>
+            <img src={tokenInfo.imageUri || "/catlayer.svg"} alt={tokenInfo.name} className="w-10 h-10 rounded-lg" />
+          </div>
+          <div>
+            <h3 className={`text-lg font-semibold ${colorTheme.accent}`}>{tokenInfo.name}</h3>
+            <p className="text-sm text-muted-foreground">${tokenInfo.symbol}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-right">
+          <div>
+            <p className="text-sm text-muted-foreground">Balance</p>
+            <p className="font-semibold text-foreground">{balanceNum.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Value</p>
+            <p className="font-semibold text-foreground">${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Price</p>
+            <p className="font-semibold text-foreground">{parseFloat(price).toFixed(8)} STT</p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Button size="sm" variant="outline" className={`border-somnia-border hover:bg-somnia-hover hover:${colorTheme.accent}`} asChild>
+            <Link to={`/token/${tokenAddress}`}>Trade</Link>
+          </Button>
+          <ExternalLink className={`w-4 h-4 ${colorTheme.accent} hover:opacity-80 cursor-pointer`} />
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+const Portfolio = () => {
+  const { address } = useAccount();
+  const { tokens, isLoading: tokensLoading } = useAllTokens();
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const createdTokens = [
     {
@@ -65,8 +94,14 @@ const Portfolio = () => {
     }
   ];
 
-  const totalValue = portfolioTokens.reduce((sum, token) => sum + parseFloat(token.value.replace('$', '').replace(',', '')), 0);
-  const totalPnL = portfolioTokens.reduce((sum, token) => sum + parseFloat(token.pnl.replace('$', '').replace(',', '')), 0);
+  const [tokenValues, setTokenValues] = useState(new Map());
+
+  const updateTokenValue = useCallback((tokenAddress, value) => {
+    setTokenValues(prev => new Map(prev.set(tokenAddress, value)));
+  }, []);
+
+  const totalValue = Array.from(tokenValues.values()).reduce((sum, value) => sum + value, 0);
+  const activePositions = tokenValues.size;
 
   return (
     <div className="min-h-screen bg-somnia-bg text-foreground relative">
@@ -76,18 +111,21 @@ const Portfolio = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
-            <Button asChild variant="outline" size="sm" className="border-somnia-border hover:bg-somnia-hover">
-              <Link to="/board">
+            <Link to="/board">
+              <Button variant="outline" size="sm" className="border-somnia-border hover:bg-somnia-hover">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Board
-              </Link>
-            </Button>
+              </Button>
+            </Link>
             <div>
               <h1 className="text-3xl font-bold text-foreground">Portfolio</h1>
               <p className="text-muted-foreground">Manage your Somnia token positions</p>
             </div>
           </div>
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Create Token
           </Button>
@@ -99,7 +137,7 @@ const Portfolio = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Portfolio Value</p>
-                <p className="text-3xl font-bold text-foreground">$0</p>
+                <p className="text-3xl font-bold text-foreground">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               </div>
               <Wallet className="w-8 h-8 text-primary" />
             </div>
@@ -123,7 +161,7 @@ const Portfolio = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Active Positions</p>
-                <p className="text-2xl font-bold text-foreground">0</p>
+                <p className="text-2xl font-bold text-foreground">{activePositions}</p>
               </div>
               <Badge variant="secondary" className="bg-primary/20 text-primary">
                 Live
@@ -142,54 +180,41 @@ const Portfolio = () => {
 
           <TabsContent value="holdings" className="mt-6">
             <div className="space-y-4">
-              {portfolioTokens.map((token, index) => {
-                const colorTheme = tokenColors[index % tokenColors.length];
-                return (
-                  <Card key={index} className={`bg-somnia-card border-somnia-border p-6 hover:shadow-somnia-glow transition-all duration-300 ${colorTheme.border} hover:${colorTheme.border}`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className={`p-2 rounded-lg ${colorTheme.bg}`}>
-                          <img src={token.image} alt={token.name} className="w-10 h-10 rounded-lg" />
-                        </div>
-                        <div>
-                          <h3 className={`text-lg font-semibold ${colorTheme.accent}`}>{token.name}</h3>
-                          <p className="text-sm text-muted-foreground">${token.symbol}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-right">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Balance</p>
-                          <p className="font-semibold text-foreground">{token.balance}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Value</p>
-                          <p className="font-semibold text-foreground">{token.value}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">24h Change</p>
-                          <p className={`font-semibold ${token.change24h >= 0 ? colorTheme.accent : 'text-destructive'}`}>
-                            {token.change24h >= 0 ? '+' : ''}{token.change24h}%
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">P&L</p>
-                          <p className={`font-semibold ${parseFloat(token.pnl.replace('$', '')) >= 0 ? colorTheme.accent : 'text-destructive'}`}>
-                            {token.pnl}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Button size="sm" variant="outline" className={`border-somnia-border hover:bg-somnia-hover hover:${colorTheme.accent}`}>
-                          Trade
-                        </Button>
-                        <ExternalLink className={`w-4 h-4 ${colorTheme.accent} hover:opacity-80 cursor-pointer`} />
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
+              {!address ? (
+                <Card className="bg-somnia-card border-somnia-border p-12">
+                  <div className="text-center">
+                    <Wallet className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Connect your wallet to view your holdings</p>
+                  </div>
+                </Card>
+              ) : tokensLoading ? (
+                <Card className="bg-somnia-card border-somnia-border p-12">
+                  <div className="text-center">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
+                    <p className="text-muted-foreground">Loading your portfolio...</p>
+                  </div>
+                </Card>
+              ) : tokens?.length === 0 ? (
+                <Card className="bg-somnia-card border-somnia-border p-12">
+                  <div className="text-center">
+                    <Wallet className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground mb-2">No tokens found</p>
+                    <p className="text-sm text-muted-foreground">Create or buy some tokens to see them here</p>
+                  </div>
+                </Card>
+              ) : (
+                tokens.map((tokenAddress, index) => {
+                  const colorTheme = tokenColors[index % tokenColors.length];
+                  return (
+                    <UserTokenItem
+                      key={tokenAddress}
+                      tokenAddress={tokenAddress}
+                      colorTheme={colorTheme}
+                      onValueUpdate={updateTokenValue}
+                    />
+                  );
+                })
+              )}
             </div>
           </TabsContent>
 
@@ -244,6 +269,11 @@ const Portfolio = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <CreateTokenModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+      />
     </div>
   );
 };
