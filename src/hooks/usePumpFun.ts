@@ -13,7 +13,7 @@ import {
 
 export const usePumpFun = () => {
   const { address } = useAccount();
-  const { writeContract } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
 
   const createToken = async (
     name: string,
@@ -26,7 +26,7 @@ export const usePumpFun = () => {
     }
 
     try {
-      const hash = await writeContract({
+      const hash = await writeContractAsync({
         address: CONTRACT_ADDRESSES.TOKEN_FACTORY as `0x${string}`,
         abi: TOKEN_FACTORY_ABI,
         functionName: 'createToken',
@@ -52,10 +52,9 @@ export const usePumpFun = () => {
       throw new Error('Bonding Curve contract not deployed');
     }
 
-    console.log('buyTokens called with:', { tokenAddress, sttAmount, address });
     
     try {
-      const hash = await writeContract({
+      const hash = await writeContractAsync({
         address: CONTRACT_ADDRESSES.BONDING_CURVE as `0x${string}`,
         abi: BONDING_CURVE_ABI,
         functionName: 'buyTokens',
@@ -63,7 +62,6 @@ export const usePumpFun = () => {
         value: parseEther(sttAmount),
       });
       
-      console.log('buyTokens returned hash:', hash, 'type:', typeof hash);
       
       if (!hash) {
         throw new Error('No transaction hash received from writeContract');
@@ -71,7 +69,6 @@ export const usePumpFun = () => {
       
       return hash;
     } catch (error) {
-      console.error('buyTokens error:', error);
       throw error;
     }
   };
@@ -81,41 +78,38 @@ export const usePumpFun = () => {
       throw new Error('Bonding Curve contract not deployed');
     }
 
-    console.log('sellTokens called with:', { tokenAddress, tokenAmount, address });
-    
+    if (!address) {
+      throw new Error('Wallet not connected');
+    }
+
     try {
-      const hash = await writeContract({
+      const hash = await writeContractAsync({
         address: CONTRACT_ADDRESSES.BONDING_CURVE as `0x${string}`,
         abi: BONDING_CURVE_ABI,
         functionName: 'sellTokens',
         args: [tokenAddress, address, parseEther(tokenAmount)],
       });
-      
-      console.log('sellTokens returned hash:', hash, 'type:', typeof hash);
-      
+
       if (!hash) {
         throw new Error('No transaction hash received from writeContract');
       }
-      
+
       return hash;
     } catch (error) {
-      console.error('sellTokens error:', error);
       throw error;
     }
   };
 
   const approveToken = async (tokenAddress: string, amount: string) => {
-    console.log('approveToken called with:', { tokenAddress, amount });
     
     try {
-      const hash = await writeContract({
+      const hash = await writeContractAsync({
         address: tokenAddress as `0x${string}`,
         abi: MEME_TOKEN_ABI,
         functionName: 'approve',
         args: [CONTRACT_ADDRESSES.BONDING_CURVE, parseEther(amount)],
       });
       
-      console.log('approveToken returned hash:', hash, 'type:', typeof hash);
       
       if (!hash) {
         throw new Error('No transaction hash received from writeContract');
@@ -123,7 +117,6 @@ export const usePumpFun = () => {
       
       return hash;
     } catch (error) {
-      console.error('approveToken error:', error);
       throw error;
     }
   };
@@ -133,7 +126,7 @@ export const usePumpFun = () => {
       throw new Error('Bonding Curve contract not deployed');
     }
 
-    return writeContract({
+    return writeContractAsync({
       address: CONTRACT_ADDRESSES.BONDING_CURVE as `0x${string}`,
       abi: BONDING_CURVE_ABI,
       functionName: 'initializeCurve',
@@ -480,14 +473,14 @@ export const usePendingRewards = () => {
     },
   });
 
-  const { writeContract } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
   
   const claimRewards = async () => {
     if (!CONTRACT_ADDRESSES.FEE_MANAGER) {
       throw new Error('Fee Manager contract not deployed');
     }
 
-    return writeContract({
+    return writeContractAsync({
       address: CONTRACT_ADDRESSES.FEE_MANAGER as `0x${string}`,
       abi: FEE_MANAGER_ABI,
       functionName: 'claimRewards',
@@ -505,7 +498,7 @@ export const usePendingRewards = () => {
 
 export const useUserAccess = () => {
   const { address } = useAccount();
-  const { writeContract } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
   
   const { data: canCreateToken, isLoading } = useReadContract({
     address: CONTRACT_ADDRESSES.USER_MANAGER as `0x${string}`,
@@ -522,7 +515,7 @@ export const useUserAccess = () => {
       throw new Error('User Manager contract not deployed');
     }
 
-    return writeContract({
+    return writeContractAsync({
       address: CONTRACT_ADDRESSES.USER_MANAGER as `0x${string}`,
       abi: USER_MANAGEMENT_ABI,
       functionName: 'validateAccess',
