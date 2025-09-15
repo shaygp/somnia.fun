@@ -29,8 +29,8 @@ const BondingCurveChart = ({
   liquidityPooled,
   className 
 }: BondingCurveChartProps) => {
-  const progress = (liquidityPooled / 80) * 100;
-  const isDexReady = liquidityPooled >= 80;
+  const progress = (liquidityPooled / 1000) * 100;
+  const isDexReady = liquidityPooled >= 1000;
 
   return (
     <Card className={`bg-somnia-card border-somnia-border p-6 ${className}`}>
@@ -109,7 +109,7 @@ const BondingCurveChart = ({
               <Droplets className="w-4 h-4 text-accent mr-1" />
               <span className="text-xs text-muted-foreground">Liquidity Pool</span>
             </div>
-            <p className="font-semibold text-foreground">{liquidityPooled}/1000 STT</p>
+            <p className="font-semibold text-foreground">{liquidityPooled.toFixed(2)} STT</p>
           </div>
           
           <div className="text-center">
@@ -138,7 +138,7 @@ const BondingCurveChart = ({
           <p className="text-xs text-muted-foreground">
             {isDexReady 
               ? "✅ Ready for DEX listing. 36 STT will be permanently locked."
-              : `${(80 - liquidityPooled).toFixed(1)} STT needed to unlock DEX listing`
+              : `${(1000 - liquidityPooled).toFixed(1)} STT needed to unlock DEX listing`
             }
           </p>
         </div>

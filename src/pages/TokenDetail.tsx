@@ -40,7 +40,7 @@ const TokenDetail = () => {
   };
   
   const displayTokenInfo = isDemoToken ? demoTokenInfo : tokenInfo;
-  const displayPrice = isDemoToken ? "0.000005" : (price || "0");
+  const displayPrice = isDemoToken ? "0.000005" : (price && price !== "0" ? price : "0.000001");
   
   if (!tokenAddress) {
     return <div>Token not found</div>;
@@ -190,7 +190,7 @@ const TokenDetail = () => {
               tokenSymbol={displayTokenInfo.symbol}
               currentSupply={parseFloat(displayTokenInfo.tokensSold)}
               currentPrice={parseFloat(displayPrice)}
-              liquidityPooled={displayTokenInfo.graduatedToDeX ? 1 : (parseFloat(displayTokenInfo.sttRaised) / 1000)}
+              liquidityPooled={parseFloat(displayTokenInfo.sttRaised)}
             />
 
             {/* Token Information */}
