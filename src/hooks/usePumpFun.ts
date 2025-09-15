@@ -108,7 +108,7 @@ export const useTokenInfo = (tokenAddress: string) => {
   const { data: tokenInfo, isLoading, error } = useReadContract({
     address: CONTRACT_ADDRESSES.TOKEN_FACTORY as `0x${string}`,
     abi: TOKEN_FACTORY_ABI,
-    functionName: 'getTokenInfo',
+    functionName: 'getTokenMetadata',
     args: [tokenAddress],
     query: {
       enabled: !!CONTRACT_ADDRESSES.TOKEN_FACTORY && !!tokenAddress,
@@ -135,16 +135,20 @@ export const useTokenInfo = (tokenAddress: string) => {
     },
   });
 
+  console.log('useTokenInfo - tokenAddress:', tokenAddress);
+  console.log('useTokenInfo - tokenInfo:', tokenInfo);
+  console.log('useTokenInfo - curveInfo:', curveInfo);
+
   return {
     tokenInfo: tokenInfo ? {
-      tokenAddress: (tokenInfo as any)[0],
-      creator: (tokenInfo as any)[1],
-      createdAt: (tokenInfo as any)[2],
-      totalSupply: formatEther((tokenInfo as any)[3]),
-      name: (tokenInfo as any)[4],
-      symbol: (tokenInfo as any)[5],
-      imageUri: (tokenInfo as any)[6],
-      description: (tokenInfo as any)[7],
+      name: (tokenInfo as any)[0],
+      symbol: (tokenInfo as any)[1],
+      imageUri: (tokenInfo as any)[2],
+      description: (tokenInfo as any)[3],
+      creator: (tokenInfo as any)[4],
+      createdAt: (tokenInfo as any)[5],
+      totalSupply: formatEther((tokenInfo as any)[6]),
+      active: (tokenInfo as any)[7],
       sttRaised: curveInfo ? formatEther((curveInfo as any)[2]) : '0',
       tokensSold: curveInfo ? formatEther((curveInfo as any)[3]) : '0',
       graduatedToDeX: isGraduated || false,
@@ -161,8 +165,14 @@ export const useAllTokens = () => {
     functionName: 'getAllTokens',
     query: {
       enabled: !!CONTRACT_ADDRESSES.TOKEN_FACTORY,
+      refetchInterval: 10000,
     },
   });
+
+  console.log('useAllTokens - CONTRACT_ADDRESSES.TOKEN_FACTORY:', CONTRACT_ADDRESSES.TOKEN_FACTORY);
+  console.log('useAllTokens - tokens data:', tokens);
+  console.log('useAllTokens - isLoading:', isLoading);
+  console.log('useAllTokens - error:', error);
 
   return {
     tokens: tokens as string[] || [],

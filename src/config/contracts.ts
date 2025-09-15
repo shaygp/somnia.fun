@@ -23,6 +23,9 @@ const isTestnet = true;
 
 export const CONTRACT_ADDRESSES = getContractAddresses(isTestnet);
 
+console.log('Contract addresses loaded:', CONTRACT_ADDRESSES);
+console.log('Using testnet:', isTestnet);
+
 export const REGISTRY_ABI = [
   {
     "inputs": [],
@@ -104,21 +107,21 @@ export const TOKEN_FACTORY_ABI = [
     "type": "function"
   },
   {
-    "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
-    "name": "getTokenInfo",
+    "inputs": [{"internalType": "address", "name": "tokenAddress", "type": "address"}],
+    "name": "getTokenMetadata",
     "outputs": [
       {
         "components": [
-          {"internalType": "address", "name": "tokenAddress", "type": "address"},
-          {"internalType": "address", "name": "creator", "type": "address"},
-          {"internalType": "uint256", "name": "createdAt", "type": "uint256"},
-          {"internalType": "uint256", "name": "totalSupply", "type": "uint256"},
           {"internalType": "string", "name": "name", "type": "string"},
           {"internalType": "string", "name": "symbol", "type": "string"},
           {"internalType": "string", "name": "imageUri", "type": "string"},
-          {"internalType": "string", "name": "description", "type": "string"}
+          {"internalType": "string", "name": "description", "type": "string"},
+          {"internalType": "address", "name": "creator", "type": "address"},
+          {"internalType": "uint256", "name": "createdAt", "type": "uint256"},
+          {"internalType": "uint256", "name": "totalSupply", "type": "uint256"},
+          {"internalType": "bool", "name": "active", "type": "bool"}
         ],
-        "internalType": "struct TokenFactory.TokenInfo",
+        "internalType": "struct TokenFactory.TokenMetadata",
         "name": "",
         "type": "tuple"
       }
