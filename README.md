@@ -3,54 +3,48 @@
 ## Architecture 
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         FRONTEND (React + TypeScript)           │
-├─────────────────────────────────────────────────────────────────┤
-│  Landing Page  │  Token Board  │  Token Detail  │  Somnex DEX   │
-│      │         │      │        │       │        │       │       │
-│      └─────────┼──────┼────────┼───────┼────────┼───────┘       │
-│                │      │        │       │        │               │
-└────────────────┼──────┼────────┼───────┼────────┼───────────────┘
-                 │      │        │       │        │
-┌────────────────┼──────┼────────┼───────┼────────┼───────────────┐
-│                           WAGMI + VIEM                          │
-└────────────────┼──────┼────────┼───────┼────────┼───────────────┘
-                 │      │        │       │        │
-┌────────────────┼──────┼────────┼───────┼────────┼───────────────┐
-│                      SOMNIA BLOCKCHAIN                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌─────────────┐    ┌─────────────────┐    ┌─────────────────┐  │
-│  │   Registry  │◄───┤  Token Factory  │    │  Bonding Curve  │  │
-│  │             │    │                 │    │                 │  │
-│  │ ┌─────────┐ │    │ ┌─────────────┐ │    │ ┌─────────────┐ │  │
-│  │ │Contract │ │    │ │ MemeToken   │ │    │ │ Price       │ │  │
-│  │ │Address  │ │    │ │ Deployment  │ │    │ │ Discovery   │ │  │
-│  │ │Registry │ │    │ │             │ │    │ │             │ │  │
-│  │ └─────────┘ │    │ └─────────────┘ │    │ └─────────────┘ │  │
-│  └─────────────┘    └─────────────────┘    └─────────────────┘  │
-│           │                   │                         │       │
-│  ┌─────────────┐    ┌─────────────────┐    ┌─────────────────┐  │
-│  │Fee Manager  │    │  User Manager   │    │Market Graduation│  │
-│  │             │    │                 │    │                 │  │
-│  │ ┌─────────┐ │    │ ┌─────────────┐ │    │ ┌─────────────┐ │  │
-│  │ │ Fee     │ │    │ │ Access      │ │    │ │ DEX         │ │  │
-│  │ │ Collection│    │ │ Control     │ │    │ │ Graduation  │ │  │
-│  │ │         │ │    │ │             │ │    │ │             │ │  │
-│  │ └─────────┘ │    │ └─────────────┘ │    │ └─────────────┘ │  │
-│  └─────────────┘    └─────────────────┘    └─────────────────┘  │
-│           │                   │                         │       │
-│  ┌─────────────┐    ┌─────────────────┐    ┌─────────────────┐  │
-│  │Liquidity    │    │ Somnex          │    │      WSTT       │  │
-│  │Pool         │    │ Integration     │    │   (Wrapper)     │  │
-│  │             │    │                 │    │                 │  │
-│  │ ┌─────────┐ │    │ ┌─────────────┐ │    │ ┌─────────────┐ │  │
-│  │ │ Pool    │ │    │ │ DEX         │ │    │ │ STT         │ │  │
-│  │ │Management │    │ │ Integration │ │    │ │ Wrapping    │ │  │
-│  │ │         │ │    │ │             │ │    │ │             │ │  │
-│  │ └─────────┘ │    │ └─────────────┘ │    │ └─────────────┘ │  │
-│  └─────────────┘    └─────────────────┘    └─────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+somnia.fun/
+├── contracts/
+│   ├── Registry.sol                 # Central contract registry
+│   ├── TokenFactory.sol            # ERC-20 token deployment
+│   ├── BondingCurve.sol            # Price discovery mechanism
+│   ├── MarketGraduation.sol        # DEX graduation logic
+│   ├── FeeManager.sol              # Fee collection & distribution
+│   ├── UserManager.sol             # Access control system
+│   ├── LiquidityPool.sol           # Liquidity management
+│   ├── SomnexIntegration.sol       # DEX integration
+│   └── WSTT.sol                    # Wrapped STT token
+├── src/
+│   ├── pages/
+│   │   ├── Landing.tsx             # Landing page
+│   │   ├── Index.tsx               # Token board
+│   │   ├── TokenDetail.tsx         # Individual token page
+│   │   ├── Portfolio.tsx           # User portfolio
+│   │   ├── Somnex.tsx              # DEX interface
+│   │   └── NotFound.tsx            # 404 page
+│   ├── components/
+│   │   ├── ui/                     # shadcn/ui components
+│   │   ├── TokenCard.tsx           # Token display component
+│   │   ├── TradingInterface.tsx    # Buy/sell interface
+│   │   └── WalletConnector.tsx     # Wallet connection
+│   ├── hooks/
+│   │   ├── usePumpFun.ts          # Main trading hook
+│   │   ├── useSomnex.ts           # DEX integration hook
+│   │   ├── use-mobile.ts          # Mobile detection
+│   │   └── use-toast.ts           # Toast notifications
+│   └── config/
+│       ├── wagmi.ts               # Wagmi configuration
+│       ├── contracts.ts           # Contract addresses & ABIs
+│       └── networks.ts            # Network configurations
+├── test/
+│   ├── Registry.test.js           # Registry contract tests
+│   ├── TokenFactory.test.js       # Token factory tests
+│   ├── BondingCurve.test.js       # Bonding curve tests
+│   └── integration.test.js        # Integration tests
+├── hardhat.config.cjs             # Hardhat configuration
+├── package.json                   # Dependencies & scripts
+├── vite.config.ts                 # Vite build configuration
+└── tailwind.config.js             # Tailwind CSS config
 ```
 
 ## Smart Contract System
