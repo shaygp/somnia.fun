@@ -1,6 +1,7 @@
 import { useWriteContract, useReadContract, useAccount, useChainId } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
 import { useToast } from '@/hooks/use-toast';
+import { CONTRACT_ADDRESSES, UNISWAP_V2_ROUTER_ABI, UNISWAP_V2_FACTORY_ABI, MEME_TOKEN_ABI } from '@/config/contracts';
 
 const SOMNEX_INTEGRATION_ABI = [
   {
@@ -107,15 +108,25 @@ const getSomnexAddress = (isTestnet: boolean) => {
 export const useSomnexSwap = () => {
   const { address } = useAccount();
   const chainId = useChainId();
-  const { writeContract } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
   const { toast } = useToast();
 
   const isTestnet = chainId === 50312;
-  const somnexAddress = getSomnexAddress(isTestnet);
+  const routerAddress = CONTRACT_ADDRESSES.SOMNEX_ROUTER;
+  const wsttAddress = CONTRACT_ADDRESSES.WSTT;
+
+  const { data: quote } = useReadContract({
+    address: routerAddress as `0x${string}`,
+    abi: UNISWAP_V2_ROUTER_ABI,
+    functionName: 'getAmountsOut',
+    args: [],
+    query: {
+      enabled: false,
+    },
+  });
 
   const getQuote = (tokenIn: string, tokenOut: string, amountIn: string) => {
     if (!amountIn || isNaN(parseFloat(amountIn))) return "0";
-
     const mockRate = 0.95;
     return (parseFloat(amountIn) * mockRate).toFixed(6);
   };
@@ -139,29 +150,57 @@ export const useSomnexSwap = () => {
     const expectedOut = getQuote(tokenIn, tokenOut, amountIn);
     const minOut = parseFloat(expectedOut) * (1 - parseFloat(slippage) / 100);
     const amountOutMinWei = parseEther(minOut.toString());
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
 
     try {
       if (tokenIn === "STT") {
-        return writeContract({
-          address: somnexAddress as `0x${string}`,
-          abi: SOMNEX_INTEGRATION_ABI,
-          functionName: 'swapETHForTokens',
-          args: [tokenOut, amountOutMinWei, address],
+        const path = [wsttAddress, tokenOut];
+        return writeContractAsync({
+          address: routerAddress as `0x${string}`,
+          abi: UNISWAP_V2_ROUTER_ABI,
+          functionName: 'swapExactETHForTokens',
+          args: [amountOutMinWei, path, address, deadline],
           value: amountInWei,
         });
       } else if (tokenOut === "STT") {
-        return writeContract({
-          address: somnexAddress as `0x${string}`,
-          abi: SOMNEX_INTEGRATION_ABI,
-          functionName: 'swapTokensForETH',
-          args: [tokenIn, amountInWei, amountOutMinWei, address],
+        const path = [tokenIn, wsttAddress];
+
+        const approvalHash = await writeContractAsync({
+          address: tokenIn as `0x${string}`,
+          abi: MEME_TOKEN_ABI,
+          functionName: 'approve',
+          args: [routerAddress, amountInWei],
+        });
+
+        if (approvalHash) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+
+        return writeContractAsync({
+          address: routerAddress as `0x${string}`,
+          abi: UNISWAP_V2_ROUTER_ABI,
+          functionName: 'swapExactTokensForETH',
+          args: [amountInWei, amountOutMinWei, path, address, deadline],
         });
       } else {
-        return writeContract({
-          address: somnexAddress as `0x${string}`,
-          abi: SOMNEX_INTEGRATION_ABI,
-          functionName: 'swapTokens',
-          args: [tokenIn, tokenOut, amountInWei, amountOutMinWei, address],
+        const path = [tokenIn, wsttAddress, tokenOut];
+
+        const approvalHash = await writeContractAsync({
+          address: tokenIn as `0x${string}`,
+          abi: MEME_TOKEN_ABI,
+          functionName: 'approve',
+          args: [routerAddress, amountInWei],
+        });
+
+        if (approvalHash) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+
+        return writeContractAsync({
+          address: routerAddress as `0x${string}`,
+          abi: UNISWAP_V2_ROUTER_ABI,
+          functionName: 'swapExactTokensForTokens',
+          args: [amountInWei, amountOutMinWei, path, address, deadline],
         });
       }
     } catch (error: any) {
@@ -182,7 +221,7 @@ export const useSomnexSwap = () => {
 
 export const useSomnexGraduation = (tokenAddress: string) => {
   const chainId = useChainId();
-  const { writeContract } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
   const { toast } = useToast();
 
   const isTestnet = chainId === 50312;
@@ -229,7 +268,7 @@ export const useSomnexGraduation = (tokenAddress: string) => {
     }
 
     try {
-      const hash = await writeContract({
+      const hash = await writeContractAsync({
         address: somnexAddress as `0x${string}`,
         abi: SOMNEX_INTEGRATION_ABI,
         functionName: 'graduateTokenToSomnex',
@@ -263,7 +302,7 @@ export const useSomnexGraduation = (tokenAddress: string) => {
     }
 
     try {
-      const hash = await writeContract({
+      const hash = await writeContractAsync({
         address: somnexAddress as `0x${string}`,
         abi: SOMNEX_INTEGRATION_ABI,
         functionName: 'listOnSomnexDEX',
