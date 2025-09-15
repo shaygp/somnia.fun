@@ -25,13 +25,21 @@ export const usePumpFun = () => {
       throw new Error('Token Factory contract not deployed');
     }
 
-    return writeContract({
-      address: CONTRACT_ADDRESSES.TOKEN_FACTORY as `0x${string}`,
-      abi: TOKEN_FACTORY_ABI,
-      functionName: 'createToken',
-      args: [name, symbol, parseEther('1000000000'), imageUri, description],
-      value: parseEther('0.1'),
-    });
+    try {
+      const hash = await writeContract({
+        address: CONTRACT_ADDRESSES.TOKEN_FACTORY as `0x${string}`,
+        abi: TOKEN_FACTORY_ABI,
+        functionName: 'createToken',
+        args: [name, symbol, parseEther('1000000000'), imageUri, description],
+        value: parseEther('0.1'),
+      });
+
+      console.log('Token creation transaction hash:', hash);
+      return hash;
+    } catch (error) {
+      console.error('Error in createToken:', error);
+      throw error;
+    }
   };
 
   const buyTokens = async (tokenAddress: string, sttAmount: string) => {

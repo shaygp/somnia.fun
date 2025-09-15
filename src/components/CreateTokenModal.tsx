@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
   const [step, setStep] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
   const [txHash, setTxHash] = useState<string>("");
+  const [statusMessage, setStatusMessage] = useState<string>("");
   const [formData, setFormData] = useState({
     name: "",
     symbol: "",
@@ -35,8 +36,9 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
     creationFee: "0.1"
   });
 
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+  const { isLoading: isConfirming, isSuccess, isError } = useWaitForTransactionReceipt({
     hash: txHash as `0x${string}`,
+    enabled: !!txHash,
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -93,8 +95,10 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
 
     setIsCreating(true);
     setStep(2);
+    setStatusMessage("Preparing transaction...");
 
     try {
+      setStatusMessage("Sending transaction to blockchain...");
       const hash = await createToken(
         formData.name,
         formData.symbol,
@@ -102,15 +106,20 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
         formData.description
       );
 
-      setTxHash(hash);
-
-      toast({
-        title: "Token Creation Initiated",
-        description: "Waiting for transaction confirmation...",
-      });
+      if (hash) {
+        setTxHash(hash);
+        setStatusMessage("Transaction submitted! Waiting for confirmation...");
+        toast({
+          title: "Token Creation Initiated",
+          description: `Transaction hash: ${hash.slice(0, 10)}...${hash.slice(-8)}`,
+        });
+      } else {
+        throw new Error("No transaction hash received");
+      }
 
     } catch (error: any) {
       console.error("Token creation error:", error);
+      setStatusMessage("Transaction failed");
       toast({
         title: "Creation Failed",
         description: error?.message || "Failed to create token",
@@ -118,31 +127,51 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
       });
       setIsCreating(false);
       setStep(1);
+      setStatusMessage("");
     }
   };
 
-  if (isSuccess && step === 2) {
-    setStep(3);
-    toast({
-      title: "Token Created Successfully!",
-      description: `${formData.name} (${formData.symbol}) is now live on Somnia`,
-    });
-    
-    setTimeout(() => {
-      setIsCreating(false);
-      setStep(1);
-      setTxHash("");
-      setFormData({
-        name: "",
-        symbol: "",
-        description: "",
-        imageUri: "",
-        initialPrice: "0.0001",
-        creationFee: "0.1"
+  useEffect(() => {
+    if (isSuccess && step === 2) {
+      setStep(3);
+      setStatusMessage("Token created successfully!");
+      toast({
+        title: "Token Created Successfully!",
+        description: `${formData.name} (${formData.symbol}) is now live on Somnia`,
       });
-      onClose();
-    }, 3000);
-  }
+
+      setTimeout(() => {
+        setIsCreating(false);
+        setStep(1);
+        setTxHash("");
+        setStatusMessage("");
+        setFormData({
+          name: "",
+          symbol: "",
+          description: "",
+          imageUri: "",
+          initialPrice: "0.0001",
+          creationFee: "0.1"
+        });
+        onClose();
+      }, 3000);
+    }
+
+    if (isError && step === 2) {
+      setStatusMessage("Transaction failed. Please try again.");
+      toast({
+        title: "Transaction Failed",
+        description: "The token creation transaction failed. Please try again.",
+        variant: "destructive"
+      });
+      setTimeout(() => {
+        setIsCreating(false);
+        setStep(1);
+        setTxHash("");
+        setStatusMessage("");
+      }, 2000);
+    }
+  }, [isSuccess, isError, step, formData, toast, onClose]);
 
   const renderStep1 = () => (
     <div className="space-y-6">
@@ -272,27 +301,51 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
   const renderStep2 = () => (
     <div className="text-center space-y-6">
       <div className="w-16 h-16 mx-auto bg-primary/20 rounded-full flex items-center justify-center">
-        <TrendingUp className="w-8 h-8 text-primary animate-pulse" />
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
       </div>
       <div>
         <h3 className="text-lg font-semibold text-foreground mb-2">Creating Your Token</h3>
-        <p className="text-muted-foreground">Setting up bonding curve and initializing contract...</p>
+        <p className="text-muted-foreground">{statusMessage || "Processing transaction..."}</p>
       </div>
-      <Progress value={75} className="w-full" />
+      <Progress value={isConfirming ? 65 : 35} className="w-full" />
+
+      {txHash && (
+        <div className="bg-somnia-card rounded-lg p-4 border border-somnia-border">
+          <p className="text-xs text-muted-foreground mb-1">Transaction Hash:</p>
+          <p className="text-xs font-mono text-foreground break-all">
+            {txHash}
+          </p>
+          <a
+            href={`https://shannon-explorer.somnia.network/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-primary hover:underline mt-2 inline-block"
+          >
+            View on Explorer →
+          </a>
+        </div>
+      )}
+
       <div className="space-y-2 text-sm">
         <div className="flex items-center justify-center space-x-2">
-          <div className="w-2 h-2 bg-primary rounded-full"></div>
-          <span className="text-foreground">Deploying contract</span>
+          <div className={`w-2 h-2 rounded-full ${txHash ? 'bg-primary' : 'bg-muted animate-pulse'}`}></div>
+          <span className={txHash ? 'text-foreground' : 'text-muted-foreground'}>Transaction submitted</span>
         </div>
         <div className="flex items-center justify-center space-x-2">
-          <div className="w-2 h-2 bg-primary rounded-full"></div>
-          <span className="text-foreground">Setting up bonding curve</span>
+          <div className={`w-2 h-2 rounded-full ${isConfirming ? 'bg-primary animate-pulse' : 'bg-muted'}`}></div>
+          <span className={isConfirming ? 'text-foreground' : 'text-muted-foreground'}>Waiting for confirmation</span>
         </div>
         <div className="flex items-center justify-center space-x-2">
           <div className="w-2 h-2 bg-muted rounded-full"></div>
-          <span className="text-muted-foreground">Initializing liquidity pool</span>
+          <span className="text-muted-foreground">Token deployed</span>
         </div>
       </div>
+
+      {isConfirming && (
+        <p className="text-xs text-muted-foreground">
+          This may take 10-30 seconds. Please don't close this window.
+        </p>
+      )}
     </div>
   );
 
