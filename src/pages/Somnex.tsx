@@ -284,7 +284,7 @@ const Somnex = () => {
                       <div className="text-center py-8">
                         <p className="text-muted-foreground mb-4">Swap on Somnex DEX</p>
                         <Button
-                          onClick={() => window.open('https://somnex.finance', '_blank')}
+                          onClick={() => window.open('https://somnex.xyz/#/', '_blank')}
                           className="bg-primary hover:bg-primary/90"
                         >
                           Go to Somnex
@@ -296,7 +296,7 @@ const Somnex = () => {
                       <div className="text-center py-8">
                         <p className="text-muted-foreground mb-4">Add Liquidity on Somnex DEX</p>
                         <Button
-                          onClick={() => window.open('https://somnex.finance', '_blank')}
+                          onClick={() => window.open('https://somnex.xyz/#/', '_blank')}
                           className="bg-primary hover:bg-primary/90"
                         >
                           Go to Somnex
@@ -309,7 +309,7 @@ const Somnex = () => {
                         <div className="text-center py-8">
                           <p className="text-muted-foreground mb-4">Pools will be available on Somnex DEX</p>
                           <Button
-                            onClick={() => window.open('https://somnex.finance', '_blank')}
+                            onClick={() => window.open('https://somnex.xyz/#/', '_blank')}
                             className="bg-primary hover:bg-primary/90"
                           >
                             Go to Somnex
