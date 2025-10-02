@@ -58,7 +58,7 @@ const TokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
     address: tokenAddress,
     name: tokenInfo.name,
     symbol: tokenInfo.symbol,
-    image: tokenInfo.imageUri || "https://via.placeholder.com/64",
+    image: tokenInfo.imageUri || `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`,
     marketCap: `${(parseFloat(tokenInfo.sttRaised) * 100).toFixed(0)} SOMI`,
     price: `${parseFloat(price).toFixed(8)} SOMI`,
     change24h: 0,

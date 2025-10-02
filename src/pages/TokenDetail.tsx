@@ -104,7 +104,15 @@ const TokenDetail = () => {
             </Button>
             
             <div className="flex items-center space-x-3">
-              <img src={displayTokenInfo.imageUri || "https://via.placeholder.com/48"} alt={displayTokenInfo.name} className="w-12 h-12 rounded-full border-2 border-somnia-border" />
+              <img
+                src={displayTokenInfo.imageUri || `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`}
+                alt={displayTokenInfo.name}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`;
+                }}
+                className="w-12 h-12 rounded-full border-2 border-somnia-border"
+              />
               <div>
                 <h1 className="text-2xl font-bold text-foreground">{displayTokenInfo.name}</h1>
                 <p className="text-muted-foreground">${displayTokenInfo.symbol}</p>

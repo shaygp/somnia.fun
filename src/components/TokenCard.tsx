@@ -40,9 +40,13 @@ const TokenCard = ({
         <div className="flex items-start justify-between mb-3 border-b border-somnia-border pb-2">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <img 
-                src={image} 
-                alt={name} 
+              <img
+                src={image}
+                alt={name}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${name}`;
+                }}
                 className="w-10 h-10 rounded border border-somnia-border group-hover:border-primary/50 transition-colors"
               />
               {trending && (

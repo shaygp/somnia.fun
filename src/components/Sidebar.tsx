@@ -10,9 +10,9 @@ const Sidebar = () => {
   const navItems = [
     { icon: Home, label: "All Tokens", path: "/board", active: location.pathname === "/board" },
     { icon: ArrowRightLeft, label: "Somnex DEX", path: "/somnex", active: location.pathname === "/somnex" },
-    { icon: TrendingUp, label: "Trending", path: "/board?filter=trending", count: 24, active: location.search === "?filter=trending" },
-    { icon: Clock, label: "Recently Created", path: "/board?filter=recent", count: 156, active: location.search === "?filter=recent" },
-    { icon: Star, label: "Favorites", path: "/board?filter=favorites", count: 8, active: location.search === "?filter=favorites" },
+    { icon: TrendingUp, label: "Trending", path: "/board?filter=trending", active: location.search === "?filter=trending" },
+    { icon: Clock, label: "Recently Created", path: "/board?filter=recent", active: location.search === "?filter=recent" },
+    { icon: Star, label: "Favorites", path: "/board?filter=favorites", active: location.search === "?filter=favorites" },
   ];
 
   const quickActions = [
@@ -45,21 +45,11 @@ const Sidebar = () => {
               <Link to={item.path}>
                 <item.icon className="w-4 h-4 mr-3" />
                 <span className="flex-1">{item.label}</span>
-                {item.count && (
-                  <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
-                    {item.count}
-                  </span>
-                )}
               </Link>
             ) : (
               <>
                 <item.icon className="w-4 h-4 mr-3" />
                 <span className="flex-1">{item.label}</span>
-                {item.count && (
-                  <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
-                    {item.count}
-                  </span>
-                )}
               </>
             )}
           </Button>
@@ -98,29 +88,6 @@ const Sidebar = () => {
             )}
           </Button>
         ))}
-      </div>
-
-      <Separator className="my-6 bg-somnia-border" />
-
-      {/* Stats */}
-      <div className="bg-somnia-gradient rounded-lg p-4 border border-somnia-border">
-        <h3 className="text-sm font-semibold text-foreground mb-3">
-          Somnia Stats
-        </h3>
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Total Tokens</span>
-            <span className="text-foreground font-medium">2,847</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">24h Volume</span>
-            <span className="text-primary font-medium">$24.8M</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Active Traders</span>
-            <span className="text-foreground font-medium">18,394</span>
-          </div>
-        </div>
       </div>
 
       <Separator className="my-6 bg-somnia-border" />

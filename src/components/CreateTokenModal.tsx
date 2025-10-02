@@ -53,6 +53,14 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please upload an image smaller than 2MB or use an image URL",
+          variant: "destructive"
+        });
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (e) => {
         const imageUri = e.target?.result as string;
@@ -107,7 +115,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
       const hash = await createToken(
         formData.name,
         formData.symbol,
-        formData.imageUri || "https://via.placeholder.com/200",
+        formData.imageUri || "",
         formData.description
       );
 
@@ -215,24 +223,55 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label>Token Image *</Label>
-        <div className="border-2 border-dashed border-somnia-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
-            id="image-upload"
+        <Label>Token Image</Label>
+        <div className="space-y-3">
+          <Input
+            id="imageUrl"
+            placeholder="https://example.com/image.png or paste image URL"
+            value={formData.imageUri.startsWith('data:') ? '' : formData.imageUri}
+            onChange={(e) => handleInputChange("imageUri", e.target.value)}
+            className="bg-somnia-card border-somnia-border focus:border-primary"
           />
-          <label htmlFor="image-upload" className="cursor-pointer">
-            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              {formData.imageUri ? "Image uploaded" : "Click to upload token image"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              PNG, JPG up to 2MB
-            </p>
-          </label>
+          <div className="relative">
+            <div className="border-2 border-dashed border-somnia-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                id="image-upload"
+              />
+              <label htmlFor="image-upload" className="cursor-pointer">
+                {formData.imageUri ? (
+                  <div className="space-y-2">
+                    <img
+                      src={formData.imageUri}
+                      alt="Preview"
+                      className="w-20 h-20 mx-auto rounded-lg object-cover border border-somnia-border"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                    <p className="text-sm text-primary">Image loaded - Click to change</p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Click to upload token image
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      PNG, JPG up to 2MB
+                    </p>
+                  </>
+                )}
+              </label>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Upload an image or paste an image URL. If not provided, a unique avatar will be generated.
+          </p>
         </div>
       </div>
 

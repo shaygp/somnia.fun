@@ -28,8 +28,12 @@ const GraduatedTokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <img
-            src={tokenInfo.imageUri || "https://via.placeholder.com/40"}
+            src={tokenInfo.imageUri || `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`}
             alt={tokenInfo.name}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`;
+            }}
             className="w-10 h-10 rounded-full"
           />
           <div>
@@ -70,9 +74,27 @@ const Somnex = () => {
   const [tokenBAmount, setTokenBAmount] = useState("");
   const [selectedTokenA, setSelectedTokenA] = useState("SOMI");
   const [selectedTokenB, setSelectedTokenB] = useState("WSOMI");
+  const [somnexTvl, setSomnexTvl] = useState<string>("0");
   const { executeSwap, getQuote } = useSomnexSwap();
   const { tokens } = useAllTokens();
   const { writeContractAsync } = useWriteContract();
+
+  useEffect(() => {
+    fetch('https://api.llama.fi/protocol/somnex')
+      .then(res => res.json())
+      .then(data => {
+        if (data.tvl && data.tvl.length > 0) {
+          const latestTvl = data.tvl[data.tvl.length - 1].totalLiquidityUSD;
+          setSomnexTvl((latestTvl / 1000000).toFixed(2));
+        }
+      })
+      .catch(err => console.error('Failed to fetch Somnex TVL:', err));
+  }, []);
+
+  const graduatedTokens = tokens?.filter(tokenAddress => {
+    const { tokenInfo } = useTokenInfo(tokenAddress);
+    return tokenInfo?.graduatedToDeX;
+  }) || [];
 
 
   const handleSwapTokens = () => {
@@ -226,7 +248,7 @@ const Somnex = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Total TVL</p>
-                    <p className="text-2xl font-bold text-primary">$12.8M</p>
+                    <p className="text-2xl font-bold text-primary">${somnexTvl}M</p>
                   </div>
                   <TrendingUp className="w-8 h-8 text-green-500 opacity-50" />
                 </div>
