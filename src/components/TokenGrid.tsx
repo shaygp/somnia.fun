@@ -69,6 +69,8 @@ interface TokenGridProps {
 
 const TokenGrid = ({ filter }: TokenGridProps) => {
   const [activeTab, setActiveTab] = useState(filter || "all");
+  const [sortBy, setSortBy] = useState<"market_cap" | "created" | "holders">("market_cap");
+  const [filterOpen, setFilterOpen] = useState(false);
   const { tokens, isLoading, error, refetch } = useAllTokens();
 
   React.useEffect(() => {
@@ -93,7 +95,7 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
   console.log('TokenGrid - tokens:', tokens, 'isLoading:', isLoading, 'error:', error);
 
   const filteredTokens = React.useMemo(() => {
-    const allTokens = tokens || [];
+    let allTokens = tokens || [];
 
     console.log('TokenGrid - filteredTokens calculation:', {
       tokens,
@@ -101,17 +103,37 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
       allTokens
     });
 
+    // Filter by tab
     switch (activeTab) {
       case "trending":
-        return allTokens.filter((t: any) => parseFloat(t.somiRaised) > 0.5).slice(0, 6);
+        allTokens = allTokens.filter((t: any) => parseFloat(t.somiRaised) > 0.5);
+        break;
       case "new":
-        return allTokens.slice().reverse().slice(0, 8);
+        allTokens = [...allTokens].reverse();
+        break;
       case "graduated":
-        return allTokens.filter((t: any) => t.graduated).slice(0, 3);
+        allTokens = allTokens.filter((t: any) => t.graduated);
+        break;
       default:
-        return allTokens;
+        break;
     }
-  }, [tokens, activeTab]);
+
+    // Sort
+    const sorted = [...allTokens].sort((a: any, b: any) => {
+      switch (sortBy) {
+        case "market_cap":
+          return parseFloat(b.somiRaised) - parseFloat(a.somiRaised);
+        case "created":
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        case "holders":
+          return 0; // TODO: implement holders count
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [tokens, activeTab, sortBy]);
 
   // Show loading state
   if (isLoading) {
@@ -159,13 +181,55 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
         </div>
         
         <div className="flex items-center space-x-3">
-            <Button variant="outline" className="border-somnia-border hover:bg-somnia-hover">
-              <Filter className="w-4 h-4 mr-2" />
-              --filter
-            </Button>
-            <Button variant="outline" className="border-somnia-border hover:bg-somnia-hover">
+            <div className="relative">
+              <Button
+                variant="outline"
+                className="border-somnia-border hover:bg-somnia-hover"
+                onClick={() => setFilterOpen(!filterOpen)}
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                --filter
+              </Button>
+              {filterOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-somnia-card border border-somnia-border rounded shadow-lg z-10">
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-somnia-hover text-foreground"
+                    onClick={() => { setActiveTab("all"); setFilterOpen(false); }}
+                  >
+                    All Tokens
+                  </button>
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-somnia-hover text-foreground"
+                    onClick={() => { setActiveTab("trending"); setFilterOpen(false); }}
+                  >
+                    Trending
+                  </button>
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-somnia-hover text-foreground"
+                    onClick={() => { setActiveTab("new"); setFilterOpen(false); }}
+                  >
+                    New
+                  </button>
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-somnia-hover text-foreground"
+                    onClick={() => { setActiveTab("graduated"); setFilterOpen(false); }}
+                  >
+                    Graduated
+                  </button>
+                </div>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              className="border-somnia-border hover:bg-somnia-hover"
+              onClick={() => {
+                const sorts: ("market_cap" | "created" | "holders")[] = ["market_cap", "created", "holders"];
+                const currentIndex = sorts.indexOf(sortBy);
+                setSortBy(sorts[(currentIndex + 1) % sorts.length]);
+              }}
+            >
               <SortAsc className="w-4 h-4 mr-2" />
-              --sort
+              --sort={sortBy}
             </Button>
         </div>
       </div>

@@ -251,7 +251,7 @@ const Somnex = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Graduated Tokens</p>
-                    <p className="text-2xl font-bold text-primary">{tokens?.length || 0}</p>
+                    <p className="text-2xl font-bold text-primary">{graduatedTokens.length || 0}</p>
                   </div>
                   <Rocket className="w-8 h-8 text-blue-500 opacity-50" />
                 </div>
@@ -260,7 +260,7 @@ const Somnex = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Active Pairs</p>
-                    <p className="text-2xl font-bold text-primary">{tokens?.length || 0}</p>
+                    <p className="text-2xl font-bold text-primary">{graduatedTokens.length || 0}</p>
                   </div>
                   <Activity className="w-8 h-8 text-purple-500 opacity-50" />
                 </div>

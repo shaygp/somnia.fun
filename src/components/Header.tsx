@@ -17,16 +17,18 @@ const Header = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-    
+
     if (searchQuery.startsWith('0x') && searchQuery.length === 42) {
       navigate(`/token/${searchQuery}`);
     } else {
-      const matchingToken = tokens?.find(address => {
-        return address.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchingToken = tokens?.find(token => {
+        return token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               token.address.toLowerCase().includes(searchQuery.toLowerCase());
       });
-      
+
       if (matchingToken) {
-        navigate(`/token/${matchingToken}`);
+        navigate(`/token/${matchingToken.address}`);
       }
     }
   };
