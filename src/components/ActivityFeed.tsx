@@ -252,8 +252,8 @@ const ActivityFeed = () => {
               </div>
             </div>
           ))}
+        </div>
 
-        {/* Footer */}
         <div className="pt-3 border-t border-somnia-border text-center">
           <p className="text-xs text-muted-foreground">
             Powered by Somnia • Real-time data
