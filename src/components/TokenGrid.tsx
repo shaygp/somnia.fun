@@ -58,7 +58,7 @@ const TokenItem = ({ tokenData }: { tokenData: any }) => {
       to={`/token/${tokenData.address}`}
       className="block transition-transform hover:scale-[1.02]"
     >
-      <TokenCard {...cardData} />
+      <TokenCard {...cardData} address={tokenData.address} />
     </Link>
   );
 };

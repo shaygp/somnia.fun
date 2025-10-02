@@ -19,7 +19,26 @@ const TokenDetail = () => {
   const [tokenInfo, setTokenInfo] = useState<any>(null);
   const [tokenInfoLoading, setTokenInfoLoading] = useState(true);
   const [tokenInfoError, setTokenInfoError] = useState<any>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
   const { price, isLoading: priceLoading, error: priceError } = useTokenPrice(tokenAddress || "");
+
+  useEffect(() => {
+    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+    setIsFavorite(favorites.includes(tokenAddress));
+  }, [tokenAddress]);
+
+  const toggleFavorite = () => {
+    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+    if (isFavorite) {
+      const newFavorites = favorites.filter((addr: string) => addr !== tokenAddress);
+      localStorage.setItem('favorites', JSON.stringify(newFavorites));
+      setIsFavorite(false);
+    } else {
+      favorites.push(tokenAddress);
+      localStorage.setItem('favorites', JSON.stringify(favorites));
+      setIsFavorite(true);
+    }
+  };
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -166,9 +185,14 @@ const TokenDetail = () => {
           </div>
           
           <div className="flex items-center space-x-3">
-            <Button variant="outline" size="sm" className="border-somnia-border hover:bg-somnia-hover">
-              <Star className="w-4 h-4 mr-2" />
-              Add to Favorites
+            <Button
+              variant="outline"
+              size="sm"
+              className={`border-somnia-border hover:bg-somnia-hover ${isFavorite ? 'bg-primary/10 border-primary' : ''}`}
+              onClick={toggleFavorite}
+            >
+              <Star className={`w-4 h-4 mr-2 ${isFavorite ? 'fill-primary text-primary' : ''}`} />
+              {isFavorite ? 'Favorited' : 'Add to Favorites'}
             </Button>
             <Button variant="outline" size="sm" className="border-somnia-border hover:bg-somnia-hover">
               <Share2 className="w-4 h-4 mr-2" />

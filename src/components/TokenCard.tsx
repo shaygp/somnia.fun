@@ -18,6 +18,7 @@ interface TokenCardProps {
   liquidityPooled?: number;
   tokensSold?: number;
   showChart?: boolean;
+  address?: string;
 }
 
 const TokenCard = ({
@@ -33,7 +34,8 @@ const TokenCard = ({
   trending = false,
   liquidityPooled = 0,
   tokensSold = 0,
-  showChart = false
+  showChart = false,
+  address
 }: TokenCardProps) => {
   return (
     <Card className="group bg-somnia-card border-somnia-border hover:border-primary/50 transition-all duration-300 hover:shadow-somnia-glow cursor-pointer relative overflow-hidden">
@@ -47,7 +49,7 @@ const TokenCard = ({
                 alt={name}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${name}`;
+                  target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${address || name}`;
                 }}
                 className="w-10 h-10 rounded border border-somnia-border group-hover:border-primary/50 transition-colors"
               />
