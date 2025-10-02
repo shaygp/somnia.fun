@@ -1,24 +1,35 @@
 import { TrendingUp, Users, DollarSign, Activity } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { useReadContract } from "wagmi";
-import { CONTRACT_ADDRESSES, TOKEN_FACTORY_ABI } from "@/config/contracts";
 import { useEffect, useState } from "react";
 
 const StatsCards = () => {
   const [totalTokens, setTotalTokens] = useState<number>(0);
   const [totalMarketCap, setTotalMarketCap] = useState<string>("0");
 
-  const { data: allTokens } = useReadContract({
-    address: CONTRACT_ADDRESSES.TOKEN_FACTORY as `0x${string}`,
-    abi: TOKEN_FACTORY_ABI,
-    functionName: 'getAllTokens',
-  });
-
   useEffect(() => {
-    if (allTokens && Array.isArray(allTokens)) {
-      setTotalTokens(allTokens.length);
-    }
-  }, [allTokens]);
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('https://tradesomnia.fun/api/tokens');
+        const data = await response.json();
+
+        if (data.success && data.tokens) {
+          setTotalTokens(data.tokens.length);
+
+          const totalSomi = data.tokens.reduce((sum: number, token: any) => {
+            return sum + parseFloat(token.somiRaised || '0');
+          }, 0);
+
+          setTotalMarketCap(totalSomi.toFixed(2));
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const stats = [
     {
