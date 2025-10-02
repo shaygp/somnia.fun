@@ -161,9 +161,12 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    const currentBlock = await client.getBlockNumber();
+    const fromBlock = currentBlock > 10000n ? currentBlock - 10000n : 0n;
+
     const logs = await client.getLogs({
       address: CONTRACT_ADDRESSES.TOKEN_FACTORY,
-      fromBlock: 0n,
+      fromBlock,
       toBlock: 'latest',
     });
 
