@@ -162,8 +162,18 @@ export default async function handler(req: any, res: any) {
 
   try {
     const explorerResponse = await fetch(
-      `https://explorer.somnia.network/api/v2/addresses/${CONTRACT_ADDRESSES.TOKEN_FACTORY}/internal-transactions`
+      `https://explorer.somnia.network/api/v2/addresses/${CONTRACT_ADDRESSES.TOKEN_FACTORY}/internal-transactions`,
+      {
+        headers: {
+          'Accept': 'application/json',
+        },
+      }
     );
+
+    if (!explorerResponse.ok) {
+      throw new Error(`Explorer API returned ${explorerResponse.status}`);
+    }
+
     const txData = await explorerResponse.json();
 
     console.log('Explorer response items count:', txData.items?.length || 0);
