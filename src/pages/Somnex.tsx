@@ -234,7 +234,7 @@ const Somnex = () => {
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
               <div className="flex items-center space-x-3 mb-2">
-                <img src="/somnex.png" alt="Somnex" className="w-10 h-10" />
+                <img src="/somnex-logo.svg" alt="Somnex" className="w-10 h-10" />
                 <h1 className="text-3xl font-bold text-primary">Somnex DEX</h1>
               </div>
               <p className="text-muted-foreground">Trade graduated tokens on Somnia's native DEX</p>

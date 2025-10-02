@@ -1,0 +1,16 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00BFFF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8A2BE2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF1493;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="#1a1a2e"/>
+  
+  <!-- Main logo shape based on the provided image -->
+  <path d="M20 30 L20 15 Q20 10 25 10 L45 10 Q50 10 50 15 L50 35 Q50 40 45 40 L35 40 L35 50 L50 50 Q55 50 55 55 L55 75 Q55 80 50 80 L25 80 Q20 80 20 75 L20 60 L35 60 L35 70 L45 70 L45 60 L30 60 Q25 60 25 55 L25 40 Q25 35 30 35 L40 35 L40 25 L30 25 L30 35 L20 35 Z" fill="url(#gradient1)"/>
+  
+  <!-- Additional geometric elements for the modern look -->
+  <path d="M65 20 L80 35 L80 50 L65 65 L65 50 L75 40 L65 30 Z" fill="url(#gradient1)"/>
+</svg>
