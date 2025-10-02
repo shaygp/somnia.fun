@@ -24,60 +24,39 @@ interface TokenData {
   sttRaised: string;
 }
 
-const TokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
-  const { tokenInfo, isLoading: tokenInfoLoading, error: tokenInfoError } = useTokenInfo(tokenAddress);
-  const { price, isLoading: priceLoading, error: priceError } = useTokenPrice(tokenAddress);
+const TokenItem = ({ tokenData }: { tokenData: any }) => {
+  const { price } = useTokenPrice(tokenData.address);
 
-  console.log('TokenItem - tokenAddress:', tokenAddress, 'tokenInfo:', tokenInfo, 'error:', tokenInfoError);
+  const calculatedPrice = price && parseFloat(price) > 0
+    ? parseFloat(price)
+    : parseFloat(tokenData.tokensSold) > 0
+      ? parseFloat(tokenData.somiRaised) / parseFloat(tokenData.tokensSold)
+      : 0.00000001;
 
-  if (tokenInfoError) {
-    console.error('TokenItem error for', tokenAddress, tokenInfoError);
-    return (
-      <div className="p-4 border border-red-500/20 rounded-lg bg-red-500/5">
-        <p className="text-red-500 text-sm">Failed to load token: {tokenAddress.slice(0, 8)}...</p>
-        <p className="text-xs text-muted-foreground mt-1">{tokenInfoError.message}</p>
-      </div>
-    );
-  }
-
-  if (tokenInfoLoading) {
-    return (
-      <div className="p-4 border border-somnia-border rounded-lg bg-somnia-card animate-pulse">
-        <div className="h-4 bg-gray-600 rounded mb-2"></div>
-        <div className="h-3 bg-gray-700 rounded"></div>
-      </div>
-    );
-  }
-
-  if (!tokenInfo) {
-    console.log('TokenItem - no tokenInfo for token:', tokenAddress);
-    return null;
-  }
-
-  const tokenData: TokenData = {
-    address: tokenAddress,
-    name: tokenInfo.name,
-    symbol: tokenInfo.symbol,
-    image: tokenInfo.imageUri || `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`,
-    marketCap: `${(parseFloat(tokenInfo.sttRaised) * 100).toFixed(0)} SOMI`,
-    price: `${parseFloat(price).toFixed(8)} SOMI`,
+  const cardData: TokenData = {
+    address: tokenData.address,
+    name: tokenData.name,
+    symbol: tokenData.symbol,
+    image: tokenData.logo || `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenData.address}`,
+    marketCap: `${tokenData.somiRaised} SOMI`,
+    price: `${calculatedPrice.toFixed(8)} SOMI`,
     change24h: 0,
     replies: 0,
     holders: 0,
-    description: tokenInfo.description || "A meme token on Somnia",
-    trending: parseFloat(tokenInfo.sttRaised) > 1000,
-    liquidityPooled: (parseFloat(tokenInfo.sttRaised) / 10000) * 100,
+    description: tokenData.description || "just pure internet chaos",
+    trending: parseFloat(tokenData.somiRaised) > 100,
+    liquidityPooled: parseFloat(tokenData.somiRaised),
     showChart: true,
-    graduatedToDeX: tokenInfo.graduatedToDeX,
-    sttRaised: tokenInfo.sttRaised
+    graduatedToDeX: tokenData.graduated,
+    sttRaised: tokenData.somiRaised
   };
 
   return (
-    <Link 
-      to={`/token/${tokenAddress}`} 
+    <Link
+      to={`/token/${tokenData.address}`}
       className="block transition-transform hover:scale-[1.02]"
     >
-      <TokenCard {...tokenData} />
+      <TokenCard {...cardData} />
     </Link>
   );
 };
@@ -122,11 +101,11 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
 
     switch (activeTab) {
       case "trending":
-        return allTokens.slice(0, 6);
+        return allTokens.filter((t: any) => parseFloat(t.somiRaised) > 0.5).slice(0, 6);
       case "new":
         return allTokens.slice().reverse().slice(0, 8);
       case "graduated":
-        return allTokens.slice(0, 3);
+        return allTokens.filter((t: any) => t.graduated).slice(0, 3);
       default:
         return allTokens;
     }
@@ -213,8 +192,8 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredTokens.map((tokenAddress) => (
-                <TokenItem key={tokenAddress} tokenAddress={tokenAddress} />
+              {filteredTokens.map((token: any) => (
+                <TokenItem key={token.address} tokenData={token} />
               ))}
             </div>
           )}
@@ -227,8 +206,8 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredTokens.map((tokenAddress) => (
-                <TokenItem key={tokenAddress} tokenAddress={tokenAddress} />
+              {filteredTokens.map((token: any) => (
+                <TokenItem key={token.address} tokenData={token} />
               ))}
             </div>
           )}
@@ -241,8 +220,8 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredTokens.map((tokenAddress) => (
-                <TokenItem key={tokenAddress} tokenAddress={tokenAddress} />
+              {filteredTokens.map((token: any) => (
+                <TokenItem key={token.address} tokenData={token} />
               ))}
             </div>
           )}
@@ -255,8 +234,8 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredTokens.map((tokenAddress) => (
-                <TokenItem key={tokenAddress} tokenAddress={tokenAddress} />
+              {filteredTokens.map((token: any) => (
+                <TokenItem key={token.address} tokenData={token} />
               ))}
             </div>
           )}

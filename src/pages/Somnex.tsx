@@ -18,21 +18,27 @@ import { parseEther } from "viem";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { Link } from "react-router-dom";
 
-const GraduatedTokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
-  const { tokenInfo } = useTokenInfo(tokenAddress);
+const GraduatedTokenItem = ({ token }: { token: any }) => {
+  if (!token || !token.graduated) return null;
 
-  if (!tokenInfo || !tokenInfo.graduatedToDeX) return null;
+  const tokenInfo = {
+    name: token.name,
+    symbol: token.symbol,
+    imageUri: token.logo,
+    sttRaised: token.somiRaised,
+    tokensSold: token.tokensSold
+  };
 
   return (
     <div className="p-4 bg-somnia-bg rounded-lg hover:bg-somnia-hover transition-colors">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <img
-            src={tokenInfo.imageUri || `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`}
+            src={tokenInfo.imageUri || `https://api.dicebear.com/7.x/identicon/svg?seed=${token.address}`}
             alt={tokenInfo.name}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`;
+              target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${token.address}`;
             }}
             className="w-10 h-10 rounded-full"
           />
@@ -46,7 +52,7 @@ const GraduatedTokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
             Graduated
           </Badge>
           <Button size="sm" variant="ghost" className="hover:bg-somnia-hover" asChild>
-            <Link to={`/token/${tokenAddress}`}>
+            <Link to={`/token/${token.address}`}>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </Button>
@@ -91,10 +97,7 @@ const Somnex = () => {
       .catch(err => console.error('Failed to fetch Somnex TVL:', err));
   }, []);
 
-  const graduatedTokens = tokens?.filter(tokenAddress => {
-    const { tokenInfo } = useTokenInfo(tokenAddress);
-    return tokenInfo?.graduatedToDeX;
-  }) || [];
+  const graduatedTokens = tokens?.filter(token => token.graduated) || [];
 
 
   const handleSwapTokens = () => {
@@ -579,9 +582,9 @@ const Somnex = () => {
                   <h2 className="text-xl font-bold mb-4">Graduated Tokens</h2>
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
-                      {tokens && tokens.length > 0 ? (
-                        tokens.slice(0, 10).map(tokenAddress => (
-                          <GraduatedTokenItem key={tokenAddress} tokenAddress={tokenAddress} />
+                      {graduatedTokens && graduatedTokens.length > 0 ? (
+                        graduatedTokens.slice(0, 10).map(token => (
+                          <GraduatedTokenItem key={token.address} token={token} />
                         ))
                       ) : (
                         <div className="text-center py-8 text-muted-foreground">

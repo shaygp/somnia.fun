@@ -334,7 +334,7 @@ export const useTokenInfo = (tokenAddress: string) => {
 };
 
 export const useAllTokens = () => {
-  const [tokenAddresses, setTokenAddresses] = useState<string[]>([]);
+  const [tokens, setTokens] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -348,16 +348,15 @@ export const useAllTokens = () => {
         const data = await response.json();
 
         if (data.success && data.tokens && data.tokens.length > 0) {
-          const addresses = data.tokens.map((t: any) => t.address);
-          setTokenAddresses(addresses);
+          setTokens(data.tokens);
           setError(null);
         } else {
-          setTokenAddresses([]);
+          setTokens([]);
         }
       } catch (err) {
         console.error('Error fetching tokens from API:', err);
         if (isInitialLoad) {
-          setTokenAddresses([]);
+          setTokens([]);
           setError(err instanceof Error ? err : new Error('Failed to fetch tokens'));
         }
       } finally {
@@ -377,8 +376,7 @@ export const useAllTokens = () => {
       const response = await fetch('https://tradesomnia.fun/api/tokens');
       const data = await response.json();
       if (data.success && data.tokens) {
-        const addresses = data.tokens.map((t: any) => t.address);
-        setTokenAddresses(addresses);
+        setTokens(data.tokens);
       }
     } catch (err) {
       console.error('Error refetching tokens:', err);
@@ -386,7 +384,7 @@ export const useAllTokens = () => {
   };
 
   return {
-    tokens: tokenAddresses,
+    tokens,
     isLoading,
     error,
     refetch,

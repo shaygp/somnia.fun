@@ -21,20 +21,24 @@ const tokenColors = [
   { accent: "text-somnia-blue", bg: "bg-blue-500/20", border: "border-blue-500/30" },
 ];
 
-const CreatedTokenItemWithFilter = ({ tokenAddress, userAddress }) => {
-  const { tokenInfo } = useTokenInfo(tokenAddress);
-
-  if (!tokenInfo || tokenInfo.creator?.toLowerCase() !== userAddress?.toLowerCase()) {
+const CreatedTokenItemWithFilter = ({ token, userAddress }) => {
+  if (!token || token.creator?.toLowerCase() !== userAddress?.toLowerCase()) {
     return null;
   }
 
-  return <CreatedTokenItem tokenAddress={tokenAddress} />;
+  return <CreatedTokenItem token={token} />;
 };
 
-const CreatedTokenItem = ({ tokenAddress }) => {
-  const { tokenInfo } = useTokenInfo(tokenAddress);
-
-  if (!tokenInfo) return null;
+const CreatedTokenItem = ({ token }) => {
+  if (!token) return null;
+  const tokenInfo = {
+    name: token.name,
+    symbol: token.symbol,
+    imageUri: token.logo,
+    sttRaised: token.somiRaised,
+    tokensSold: token.tokensSold,
+    graduatedToDeX: token.graduated
+  };
 
   return (
     <Card className="bg-somnia-card border-somnia-border p-6">
@@ -68,17 +72,21 @@ const CreatedTokenItem = ({ tokenAddress }) => {
         </div>
 
         <Button size="sm" variant="outline" className="border-somnia-border hover:bg-somnia-hover" asChild>
-          <Link to={`/token/${tokenAddress}`}>Manage</Link>
+          <Link to={`/token/${token.address}`}>Manage</Link>
         </Button>
       </div>
     </Card>
   );
 };
 
-const UserTokenItem = ({ tokenAddress, colorTheme, onValueUpdate }) => {
-  const { tokenInfo } = useTokenInfo(tokenAddress);
-  const { balance } = useTokenBalance(tokenAddress);
-  const { price } = useTokenPrice(tokenAddress);
+const UserTokenItem = ({ token, colorTheme, onValueUpdate }) => {
+  const { balance } = useTokenBalance(token.address);
+  const { price } = useTokenPrice(token.address);
+  const tokenInfo = {
+    name: token.name,
+    symbol: token.symbol,
+    imageUri: token.logo
+  };
 
   const balanceNum = parseFloat(balance);
   const priceNum = parseFloat(price);
@@ -86,9 +94,9 @@ const UserTokenItem = ({ tokenAddress, colorTheme, onValueUpdate }) => {
 
   useEffect(() => {
     if (onValueUpdate && tokenInfo && balanceNum > 0) {
-      onValueUpdate(tokenAddress, value);
+      onValueUpdate(token.address, value);
     }
-  }, [value, tokenInfo, balanceNum, onValueUpdate, tokenAddress]);
+  }, [value, tokenInfo, balanceNum, onValueUpdate, token.address]);
 
   if (balanceNum === 0 || !tokenInfo) return null;
 
@@ -122,7 +130,7 @@ const UserTokenItem = ({ tokenAddress, colorTheme, onValueUpdate }) => {
 
         <div className="flex items-center space-x-2">
           <Button size="sm" variant="outline" className={`border-somnia-border hover:bg-somnia-hover hover:${colorTheme.accent}`} asChild>
-            <Link to={`/token/${tokenAddress}`}>Trade</Link>
+            <Link to={`/token/${token.address}`}>Trade</Link>
           </Button>
           <ExternalLink className={`w-4 h-4 ${colorTheme.accent} hover:opacity-80 cursor-pointer`} />
         </div>
@@ -246,12 +254,12 @@ const Portfolio = () => {
                   </div>
                 </Card>
               ) : (
-                tokens.map((tokenAddress, index) => {
+                tokens.map((token, index) => {
                   const colorTheme = tokenColors[index % tokenColors.length];
                   return (
                     <UserTokenItem
-                      key={tokenAddress}
-                      tokenAddress={tokenAddress}
+                      key={token.address}
+                      token={token}
                       colorTheme={colorTheme}
                       onValueUpdate={updateTokenValue}
                     />
@@ -279,10 +287,10 @@ const Portfolio = () => {
                 </Card>
               ) : (
                 <>
-                  {tokens?.map((tokenAddress) => (
+                  {tokens?.map((token) => (
                     <CreatedTokenItemWithFilter
-                      key={tokenAddress}
-                      tokenAddress={tokenAddress}
+                      key={token.address}
+                      token={token}
                       userAddress={address}
                     />
                   ))}
