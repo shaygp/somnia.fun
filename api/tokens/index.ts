@@ -103,40 +103,26 @@ const client = createPublicClient({
 
 async function getTokenData(tokenAddress: string) {
   try {
-    const [metadata, curveInfo, isGraduated] = await Promise.all([
-      client.readContract({
-        address: CONTRACT_ADDRESSES.TOKEN_FACTORY,
-        abi: TOKEN_FACTORY_ABI,
-        functionName: 'getTokenMetadata',
-        args: [tokenAddress as `0x${string}`],
-      }),
-      client.readContract({
-        address: CONTRACT_ADDRESSES.BONDING_CURVE,
-        abi: BONDING_CURVE_ABI,
-        functionName: 'getCurveInfo',
-        args: [tokenAddress as `0x${string}`],
-      }),
-      client.readContract({
-        address: CONTRACT_ADDRESSES.MARKET_GRADUATION,
-        abi: MARKET_GRADUATION_ABI,
-        functionName: 'isGraduated',
-        args: [tokenAddress as `0x${string}`],
-      }),
-    ]);
+    const curveInfo = await client.readContract({
+      address: CONTRACT_ADDRESSES.BONDING_CURVE,
+      abi: BONDING_CURVE_ABI,
+      functionName: 'getCurveInfo',
+      args: [tokenAddress as `0x${string}`],
+    });
 
     return {
       address: tokenAddress,
-      name: metadata[0],
-      symbol: metadata[1],
-      logo: metadata[2],
-      description: metadata[3],
-      creator: metadata[4],
-      createdAt: Number(metadata[5]),
-      totalSupply: formatEther(metadata[6]),
-      active: metadata[7],
-      somiRaised: formatEther(curveInfo[1]),
-      tokensSold: formatEther(curveInfo[0]),
-      graduated: isGraduated,
+      name: 'Token',
+      symbol: 'TKN',
+      logo: `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`,
+      description: '',
+      creator: '0x0',
+      createdAt: Date.now(),
+      totalSupply: '1000000000',
+      active: curveInfo[5],
+      somiRaised: curveInfo[1] ? formatEther(curveInfo[1]) : '0',
+      tokensSold: curveInfo[0] ? formatEther(curveInfo[0]) : '0',
+      graduated: curveInfo[4],
       tradingLink: `https://tradesomnia.fun/token/${tokenAddress}`,
     };
   } catch (error) {
