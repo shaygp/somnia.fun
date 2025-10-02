@@ -1,5 +1,6 @@
 import { useWriteContract, useReadContract, useAccount } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
+import { useState, useEffect } from 'react';
 import { 
   CONTRACT_ADDRESSES, 
   REGISTRY_ABI,
@@ -333,29 +334,53 @@ export const useTokenInfo = (tokenAddress: string) => {
 };
 
 export const useAllTokens = () => {
-  const { data: tokens, isLoading, error, refetch } = useReadContract({
-    address: CONTRACT_ADDRESSES.TOKEN_FACTORY as `0x${string}`,
-    abi: TOKEN_FACTORY_ABI,
-    functionName: 'getAllTokens',
-    query: {
-      enabled: !!CONTRACT_ADDRESSES.TOKEN_FACTORY,
-      refetchInterval: 10000,
-      retry: 3,
-    },
-  });
+  const [tokenAddresses, setTokenAddresses] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  console.log('useAllTokens - CONTRACT_ADDRESSES.TOKEN_FACTORY:', CONTRACT_ADDRESSES.TOKEN_FACTORY);
-  console.log('useAllTokens - tokens data:', tokens);
-  console.log('useAllTokens - isLoading:', isLoading);
-  console.log('useAllTokens - error:', error);
+  useEffect(() => {
+    const fetchTokensFromAPI = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('https://tradesomnia.fun/api/tokens');
+        const data = await response.json();
 
-  // Add debugging for contract address validity
-  if (!CONTRACT_ADDRESSES.TOKEN_FACTORY) {
-    console.error('TOKEN_FACTORY address is missing from CONTRACT_ADDRESSES');
-  }
+        if (data.success && data.tokens && data.tokens.length > 0) {
+          const addresses = data.tokens.map((t: any) => t.address);
+          setTokenAddresses(addresses);
+          setError(null);
+        } else {
+          setTokenAddresses([]);
+        }
+      } catch (err) {
+        console.error('Error fetching tokens from API:', err);
+        setTokenAddresses([]);
+        setError(err instanceof Error ? err : new Error('Failed to fetch tokens'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTokensFromAPI();
+    const interval = setInterval(fetchTokensFromAPI, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const refetch = async () => {
+    try {
+      const response = await fetch('https://tradesomnia.fun/api/tokens');
+      const data = await response.json();
+      if (data.success && data.tokens) {
+        const addresses = data.tokens.map((t: any) => t.address);
+        setTokenAddresses(addresses);
+      }
+    } catch (err) {
+      console.error('Error refetching tokens:', err);
+    }
+  };
 
   return {
-    tokens: (tokens as string[]) || [],
+    tokens: tokenAddresses,
     isLoading,
     error,
     refetch,

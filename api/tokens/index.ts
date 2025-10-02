@@ -145,6 +145,8 @@ async function getTokenData(tokenAddress: string) {
   }
 }
 
+const TOKEN_CREATED_EVENT = '0x2d49c5d1b01e5c0e0d3c2d4e8c38f32a6b41f6e8e2b02ab8f32a6b41f6e8e2b0';
+
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -159,14 +161,31 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const allTokens = await client.readContract({
+    const logs = await client.getLogs({
       address: CONTRACT_ADDRESSES.TOKEN_FACTORY,
-      abi: TOKEN_FACTORY_ABI,
-      functionName: 'getAllTokens',
+      fromBlock: 0n,
+      toBlock: 'latest',
     });
 
+    const tokenAddresses = logs
+      .filter((log) => log.topics.length > 0)
+      .map((log) => {
+        try {
+          if (log.topics[1]) {
+            const tokenAddress = '0x' + log.topics[1].slice(-40);
+            return tokenAddress;
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      })
+      .filter((addr): addr is string => addr !== null);
+
+    const uniqueTokens = [...new Set(tokenAddresses)];
+
     const tokensData = await Promise.all(
-      allTokens.map((tokenAddress: string) => getTokenData(tokenAddress))
+      uniqueTokens.map((tokenAddress: string) => getTokenData(tokenAddress))
     );
 
     const validTokens = tokensData.filter((token) => token !== null);
