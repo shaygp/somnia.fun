@@ -234,16 +234,7 @@ const Somnex = () => {
               <p className="text-muted-foreground">Trade graduated tokens on Somnia's native DEX</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <Card className="p-4 bg-somnia-card border-somnia-border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">24h Volume</p>
-                    <p className="text-2xl font-bold text-primary">$2.4M</p>
-                  </div>
-                  <DollarSign className="w-8 h-8 text-primary opacity-50" />
-                </div>
-              </Card>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <Card className="p-4 bg-somnia-card border-somnia-border">
                 <div className="flex items-center justify-between">
                   <div>
