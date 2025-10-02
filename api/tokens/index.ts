@@ -24,12 +24,12 @@ const somnia = defineChain({
 });
 
 const CONTRACT_ADDRESSES = {
-  TOKEN_FACTORY: '0xeeC988BB024C876112c56E96E82dB87fc18e8116' as const,
+  REGISTRY: '0x3bb0d2796562a96Be23020EC750d8a1a021B9fDe' as const,
   BONDING_CURVE: '0x4650141E4276bB3AB54d81A7dc3EC86DfFfBD45B' as const,
   MARKET_GRADUATION: '0x9e34699767454d90f6315394c7F0d5E00e9Ad376' as const,
 };
 
-const TOKEN_FACTORY_ABI = [
+const REGISTRY_ABI = [
   {
     inputs: [],
     name: 'getAllTokens',
@@ -38,8 +38,8 @@ const TOKEN_FACTORY_ABI = [
     type: 'function',
   },
   {
-    inputs: [{ internalType: 'address', name: 'tokenAddress', type: 'address' }],
-    name: 'getTokenMetadata',
+    inputs: [{ internalType: 'address', name: 'token', type: 'address' }],
+    name: 'getTokenInfo',
     outputs: [
       {
         components: [
@@ -50,9 +50,9 @@ const TOKEN_FACTORY_ABI = [
           { internalType: 'address', name: 'creator', type: 'address' },
           { internalType: 'uint256', name: 'createdAt', type: 'uint256' },
           { internalType: 'uint256', name: 'totalSupply', type: 'uint256' },
-          { internalType: 'bool', name: 'active', type: 'bool' },
+          { internalType: 'bool', name: 'isActive', type: 'bool' },
         ],
-        internalType: 'struct TokenFactory.TokenMetadata',
+        internalType: 'struct Registry.TokenInfo',
         name: '',
         type: 'tuple',
       },
@@ -103,11 +103,11 @@ const client = createPublicClient({
 
 async function getTokenData(tokenAddress: string) {
   try {
-    const [tokenMetadata, curveInfo, isGraduated] = await Promise.all([
+    const [tokenInfo, curveInfo, isGraduated] = await Promise.all([
       client.readContract({
-        address: CONTRACT_ADDRESSES.TOKEN_FACTORY,
-        abi: TOKEN_FACTORY_ABI,
-        functionName: 'getTokenMetadata',
+        address: CONTRACT_ADDRESSES.REGISTRY,
+        abi: REGISTRY_ABI,
+        functionName: 'getTokenInfo',
         args: [tokenAddress as `0x${string}`],
       }),
       client.readContract({
@@ -126,14 +126,14 @@ async function getTokenData(tokenAddress: string) {
 
     return {
       address: tokenAddress,
-      name: tokenMetadata[0],
-      symbol: tokenMetadata[1],
-      logo: tokenMetadata[2],
-      description: tokenMetadata[3],
-      creator: tokenMetadata[4],
-      createdAt: Number(tokenMetadata[5]),
-      totalSupply: formatEther(tokenMetadata[6]),
-      active: tokenMetadata[7],
+      name: tokenInfo[0],
+      symbol: tokenInfo[1],
+      logo: tokenInfo[2],
+      description: tokenInfo[3],
+      creator: tokenInfo[4],
+      createdAt: Number(tokenInfo[5]),
+      totalSupply: formatEther(tokenInfo[6]),
+      active: tokenInfo[7],
       somiRaised: formatEther(curveInfo[1]),
       tokensSold: formatEther(curveInfo[0]),
       graduated: isGraduated,
@@ -161,34 +161,14 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const currentBlock = await client.getBlockNumber();
-    const fromBlock = currentBlock > 10000n ? currentBlock - 10000n : 0n;
-
-    const logs = await client.getLogs({
-      address: CONTRACT_ADDRESSES.TOKEN_FACTORY,
-      fromBlock,
-      toBlock: 'latest',
+    const allTokens = await client.readContract({
+      address: CONTRACT_ADDRESSES.REGISTRY,
+      abi: REGISTRY_ABI,
+      functionName: 'getAllTokens',
     });
 
-    const tokenAddresses = logs
-      .filter((log) => log.topics.length > 0)
-      .map((log) => {
-        try {
-          if (log.topics[1]) {
-            const tokenAddress = '0x' + log.topics[1].slice(-40);
-            return tokenAddress;
-          }
-          return null;
-        } catch {
-          return null;
-        }
-      })
-      .filter((addr): addr is string => addr !== null);
-
-    const uniqueTokens = [...new Set(tokenAddresses)];
-
     const tokensData = await Promise.all(
-      uniqueTokens.map((tokenAddress: string) => getTokenData(tokenAddress))
+      (allTokens as string[]).map((tokenAddress: string) => getTokenData(tokenAddress))
     );
 
     const validTokens = tokensData.filter((token) => token !== null);
