@@ -24,6 +24,7 @@ contract BondingCurveContract is Ownable, ReentrancyGuard {
     
     mapping(address => TokenCurve) public tokenCurves;
     mapping(address => uint256) public tokenBalances;
+    mapping(address => bool) public feeWhitelist;
     
     uint256 public constant GRADUATION_THRESHOLD = 10000 * 10**18;
     uint256 public constant MAX_SUPPLY_FOR_CURVE = 800_000_000 * 10**18;
@@ -56,6 +57,7 @@ contract BondingCurveContract is Ownable, ReentrancyGuard {
     );
 
     event TokenGraduated(address indexed token, uint256 somiCollected);
+    event WhitelistUpdated(address indexed account, bool whitelisted);
     
     modifier onlyValidToken(address token) {
         require(registry.isValidToken(token), "Invalid token");
@@ -113,7 +115,8 @@ contract BondingCurveContract is Ownable, ReentrancyGuard {
 
         TokenCurve storage curve = tokenCurves[token];
 
-        uint256 fee = (somiAmount * BUY_FEE_PERCENT) / FEE_DENOMINATOR;
+        bool userWhitelisted = feeWhitelist[user];
+        uint256 fee = userWhitelisted ? 0 : (somiAmount * BUY_FEE_PERCENT) / FEE_DENOMINATOR;
         uint256 somiAfterFee = somiAmount - fee;
 
         uint256 tokensOut = BondingCurve.calculateTokensOut(somiAfterFee, curve.soldSupply);
@@ -128,10 +131,12 @@ contract BondingCurveContract is Ownable, ReentrancyGuard {
 
         IERC20(token).safeTransfer(user, tokensOut);
 
-        address feeManager = registry.getFeeManager();
-        if (feeManager != address(0) && fee > 0) {
-            (bool success, ) = feeManager.call{value: fee}("");
-            require(success, "Fee manager transfer failed");
+        if (fee > 0) {
+            address feeManager = registry.getFeeManager();
+            if (feeManager != address(0)) {
+                (bool success, ) = feeManager.call{value: fee}("");
+                require(success, "Fee manager transfer failed");
+            }
         }
 
         uint256 newPrice = BondingCurve.calculatePrice(curve.soldSupply);
@@ -158,7 +163,8 @@ contract BondingCurveContract is Ownable, ReentrancyGuard {
         uint256 somiOut = BondingCurve.calculateSomiOut(tokenAmount, curve.soldSupply);
         require(somiOut > 0, "No SOMI to receive");
 
-        uint256 fee = (somiOut * SELL_FEE_PERCENT) / FEE_DENOMINATOR;
+        bool userWhitelisted = feeWhitelist[user];
+        uint256 fee = userWhitelisted ? 0 : (somiOut * SELL_FEE_PERCENT) / FEE_DENOMINATOR;
         uint256 somiAfterFee = somiOut - fee;
 
         require(address(this).balance >= somiOut, "Insufficient SOMI balance");
@@ -169,10 +175,12 @@ contract BondingCurveContract is Ownable, ReentrancyGuard {
         IERC20(token).safeTransferFrom(user, address(this), tokenAmount);
         tokenBalances[token] += tokenAmount;
 
-        address feeManager = registry.getFeeManager();
-        if (feeManager != address(0) && fee > 0) {
-            (bool success, ) = feeManager.call{value: fee}("");
-            require(success, "Fee manager transfer failed");
+        if (fee > 0) {
+            address feeManager = registry.getFeeManager();
+            if (feeManager != address(0)) {
+                (bool success, ) = feeManager.call{value: fee}("");
+                require(success, "Fee manager transfer failed");
+            }
         }
 
         payable(user).transfer(somiAfterFee);
@@ -228,6 +236,16 @@ contract BondingCurveContract is Ownable, ReentrancyGuard {
     
     function getTokenBalance(address token) external view returns (uint256) {
         return tokenBalances[token];
+    }
+    
+    function setFeeWhitelist(address account, bool whitelisted) external onlyOwner {
+        require(account != address(0), "Invalid account address");
+        feeWhitelist[account] = whitelisted;
+        emit WhitelistUpdated(account, whitelisted);
+    }
+    
+    function isWhitelisted(address account) external view returns (bool) {
+        return feeWhitelist[account];
     }
     
     receive() external payable {}

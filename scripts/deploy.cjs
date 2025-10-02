@@ -50,17 +50,16 @@ async function main() {
   console.log("✓ FeeManager deployed to:", feeManagerAddress, "\n");
 
   console.log("Step 6/6: Configuring Registry...");
-  await registry.setTokenFactory(tokenFactoryAddress);
-  console.log("✓ Set TokenFactory in Registry");
-
-  await registry.setBondingCurve(bondingCurveAddress);
-  console.log("✓ Set BondingCurve in Registry");
-
-  await registry.setMarketGraduation(marketGraduationAddress);
-  console.log("✓ Set MarketGraduation in Registry");
-
-  await registry.setFeeManager(feeManagerAddress);
-  console.log("✓ Set FeeManager in Registry\n");
+  await registry.initialize(
+    tokenFactoryAddress,
+    bondingCurveAddress,
+    "0x0000000000000000000000000000000000000000", // liquidityPool placeholder
+    "0x0000000000000000000000000000000000000000", // userManager placeholder  
+    feeManagerAddress,
+    marketGraduationAddress,
+    "0x0000000000000000000000000000000000000000"  // wstt placeholder
+  );
+  console.log("✓ Registry initialized with contract addresses\n");
 
   if (networkName !== "localhost" && networkName !== "hardhat") {
     console.log("Waiting for block confirmations...");

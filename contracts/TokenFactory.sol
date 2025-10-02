@@ -28,6 +28,7 @@ contract TokenFactory is Ownable, ReentrancyGuard {
     uint256 public constant INITIAL_SUPPLY = 1_000_000_000 * 10**18;
 
     address public treasuryAddress;
+    mapping(address => bool) public feeWhitelist;
     
     event TokenCreated(
         address indexed tokenAddress,
@@ -36,6 +37,8 @@ contract TokenFactory is Ownable, ReentrancyGuard {
         string symbol,
         uint256 totalSupply
     );
+    
+    event WhitelistUpdated(address indexed account, bool whitelisted);
     
     event MetadataUpdated(address indexed tokenAddress, string imageUri, string description);
     event TokenBurned(address indexed tokenAddress, uint256 amount);
@@ -59,7 +62,9 @@ contract TokenFactory is Ownable, ReentrancyGuard {
         string memory imageUri,
         string memory description
     ) external payable nonReentrant returns (address) {
-        require(msg.value >= CREATION_FEE, "Insufficient creation fee");
+        bool senderWhitelisted = feeWhitelist[msg.sender];
+        uint256 requiredFee = senderWhitelisted ? 0 : CREATION_FEE;
+        require(msg.value >= requiredFee, "Insufficient creation fee");
         require(bytes(name).length > 0 && bytes(symbol).length > 0, "Invalid name or symbol");
         require(supply > 0, "Supply must be greater than 0");
         
@@ -98,9 +103,9 @@ contract TokenFactory is Ownable, ReentrancyGuard {
         );
         require(success, "Curve initialization failed");
 
-        if (treasuryAddress != address(0) && msg.value >= CREATION_FEE) {
-            payable(treasuryAddress).transfer(CREATION_FEE);
-            emit CreationFeeSent(msg.sender, CREATION_FEE);
+        if (treasuryAddress != address(0) && msg.value >= requiredFee && requiredFee > 0) {
+            payable(treasuryAddress).transfer(requiredFee);
+            emit CreationFeeSent(msg.sender, requiredFee);
         }
 
         emit TokenCreated(tokenAddress, msg.sender, name, symbol, supply);
@@ -163,5 +168,15 @@ contract TokenFactory is Ownable, ReentrancyGuard {
     function setTreasuryAddress(address _treasury) external onlyOwner {
         require(_treasury != address(0), "Invalid treasury address");
         treasuryAddress = _treasury;
+    }
+    
+    function setFeeWhitelist(address account, bool whitelisted) external onlyOwner {
+        require(account != address(0), "Invalid account address");
+        feeWhitelist[account] = whitelisted;
+        emit WhitelistUpdated(account, whitelisted);
+    }
+    
+    function isWhitelisted(address account) external view returns (bool) {
+        return feeWhitelist[account];
     }
 }

@@ -15,7 +15,9 @@
     "deploy:modular": "hardhat run scripts/deployAndConfigure.js",
     "deploy:somnex": "hardhat run scripts/deploySomnex.js --network somnia",
     "deploy:somnex-testnet": "hardhat run scripts/deploySomnex.js --network somnia-testnet",
-    "verify": "hardhat verify"
+    "verify": "hardhat verify",
+    "whitelist:setup": "hardhat run scripts/setupWhitelist.cjs",
+    "whitelist:manage": "hardhat run scripts/manageWhitelist.cjs"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",

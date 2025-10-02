@@ -27,6 +27,7 @@ contract MarketGraduation is Ownable, ReentrancyGuard {
     ISomnexRouter public somnexRouter;
 
     mapping(address => GraduationInfo) public graduationInfo;
+    mapping(address => bool) public feeWhitelist;
 
     uint256 public constant GRADUATION_THRESHOLD = 10000 * 10**18;
     uint256 public constant LOCKED_LIQUIDITY_SOMI = 15000 * 10**18;
@@ -52,6 +53,7 @@ contract MarketGraduation is Ownable, ReentrancyGuard {
     event LiquidityLocked(address indexed token, uint256 liquidityTokens);
     event TreasuryFeeSent(address indexed token, uint256 amount);
     event GraduationFeeSent(address indexed token, uint256 amount);
+    event WhitelistUpdated(address indexed account, bool whitelisted);
     
     modifier onlyAuthorized() {
         require(
@@ -106,13 +108,31 @@ contract MarketGraduation is Ownable, ReentrancyGuard {
         uint256 somiAmount = address(this).balance;
         uint256 tokenAmount = LOCKED_LIQUIDITY_TOKENS;
 
-        require(somiAmount >= LOCKED_LIQUIDITY_SOMI + GRADUATION_FEE, "Insufficient SOMI for listing");
+        address tokenFactory = registry.getTokenFactory();
+        address tokenCreator = address(0);
+        if (tokenFactory != address(0)) {
+            (bool success, bytes memory data) = tokenFactory.staticcall(
+                abi.encodeWithSignature("tokenMetadata(address)", token)
+            );
+            if (success) {
+                (, , , , address creator, , , ) = abi.decode(
+                    data,
+                    (string, string, string, string, address, uint256, uint256, bool)
+                );
+                tokenCreator = creator;
+            }
+        }
+        
+        bool creatorWhitelisted = feeWhitelist[tokenCreator];
+        uint256 graduationFee = creatorWhitelisted ? 0 : GRADUATION_FEE;
+        
+        require(somiAmount >= LOCKED_LIQUIDITY_SOMI + graduationFee, "Insufficient SOMI for listing");
         require(IERC20(token).balanceOf(address(this)) >= tokenAmount, "Insufficient tokens for listing");
 
-        if (GRADUATION_FEE > 0 && treasuryAddress != address(0)) {
-            payable(treasuryAddress).transfer(GRADUATION_FEE);
-            emit GraduationFeeSent(token, GRADUATION_FEE);
-            somiAmount -= GRADUATION_FEE;
+        if (graduationFee > 0 && treasuryAddress != address(0)) {
+            payable(treasuryAddress).transfer(graduationFee);
+            emit GraduationFeeSent(token, graduationFee);
+            somiAmount -= graduationFee;
         }
 
         uint256 totalSupply = IERC20(token).totalSupply();
@@ -199,6 +219,16 @@ contract MarketGraduation is Ownable, ReentrancyGuard {
     
     function getPairAddress(address token) external view returns (address) {
         return graduationInfo[token].pairAddress;
+    }
+    
+    function setFeeWhitelist(address account, bool whitelisted) external onlyOwner {
+        require(account != address(0), "Invalid account address");
+        feeWhitelist[account] = whitelisted;
+        emit WhitelistUpdated(account, whitelisted);
+    }
+    
+    function isWhitelisted(address account) external view returns (bool) {
+        return feeWhitelist[account];
     }
     
     receive() external payable {}
