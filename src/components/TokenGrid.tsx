@@ -44,7 +44,7 @@ const TokenItem = ({ tokenData }: { tokenData: any }) => {
     change24h: 0,
     replies: 0,
     holders: 0,
-    description: tokenData.description || "just pure internet chaos",
+    description: tokenData.description || "",
     trending: parseFloat(tokenData.somiRaised) > 100,
     liquidityPooled: parseFloat(tokenData.somiRaised),
     tokensSold: parseFloat(tokenData.tokensSold),
