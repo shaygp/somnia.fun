@@ -103,26 +103,37 @@ const client = createPublicClient({
 
 async function getTokenData(tokenAddress: string) {
   try {
-    const curveInfo = await client.readContract({
-      address: CONTRACT_ADDRESSES.BONDING_CURVE,
-      abi: BONDING_CURVE_ABI,
-      functionName: 'getCurveInfo',
-      args: [tokenAddress as `0x${string}`],
-    });
+    const explorerTokenResponse = await fetch(
+      `https://explorer.somnia.network/api/v2/addresses/${tokenAddress}`
+    );
+    const explorerTokenData = await explorerTokenResponse.json();
+
+    let curveInfo;
+    let curveFailed = false;
+    try {
+      curveInfo = await client.readContract({
+        address: CONTRACT_ADDRESSES.BONDING_CURVE,
+        abi: BONDING_CURVE_ABI,
+        functionName: 'getCurveInfo',
+        args: [tokenAddress as `0x${string}`],
+      });
+    } catch (e) {
+      curveFailed = true;
+    }
 
     return {
       address: tokenAddress,
-      name: 'Token',
-      symbol: 'TKN',
+      name: explorerTokenData.name || 'Unknown Token',
+      symbol: explorerTokenData.token?.symbol || explorerTokenData.name || 'TKN',
       logo: `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`,
       description: '',
-      creator: '0x0',
-      createdAt: Date.now(),
+      creator: explorerTokenData.creator_address_hash || '0x0',
+      createdAt: explorerTokenData.timestamp ? new Date(explorerTokenData.timestamp).getTime() : Date.now(),
       totalSupply: '1000000000',
-      active: curveInfo[5],
-      somiRaised: curveInfo[1] ? formatEther(curveInfo[1]) : '0',
-      tokensSold: curveInfo[0] ? formatEther(curveInfo[0]) : '0',
-      graduated: curveInfo[4],
+      active: !curveFailed && curveInfo ? curveInfo[5] : true,
+      somiRaised: !curveFailed && curveInfo && curveInfo[1] ? formatEther(curveInfo[1]) : '0',
+      tokensSold: !curveFailed && curveInfo && curveInfo[0] ? formatEther(curveInfo[0]) : '0',
+      graduated: !curveFailed && curveInfo ? curveInfo[4] : false,
       tradingLink: `https://tradesomnia.fun/token/${tokenAddress}`,
     };
   } catch (error) {

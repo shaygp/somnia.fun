@@ -8,20 +8,60 @@ import BondingCurveChart from "@/components/BondingCurveChart";
 import TradingInterface from "@/components/TradingInterface";
 import ActivityFeed from "@/components/ActivityFeed";
 import AnimatedBackground from "@/components/AnimatedBackground";
-import { useTokenInfo, useTokenPrice } from "@/hooks/usePumpFun";
+import { useTokenPrice } from "@/hooks/usePumpFun";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const TokenDetail = () => {
   const { tokenAddress } = useParams();
   const navigate = useNavigate();
-  const { tokenInfo, isLoading: tokenInfoLoading, error: tokenInfoError } = useTokenInfo(tokenAddress || "");
+  const [tokenInfo, setTokenInfo] = useState<any>(null);
+  const [tokenInfoLoading, setTokenInfoLoading] = useState(true);
+  const [tokenInfoError, setTokenInfoError] = useState<any>(null);
   const { price, isLoading: priceLoading, error: priceError } = useTokenPrice(tokenAddress || "");
-  
-  console.log('TokenDetail - tokenAddress:', tokenAddress);
-  console.log('TokenDetail - tokenInfoLoading:', tokenInfoLoading, 'priceLoading:', priceLoading);
-  console.log('TokenDetail - tokenInfo:', tokenInfo, 'price:', price);
-  console.log('TokenDetail - errors:', { tokenInfoError, priceError });
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      if (!tokenAddress) return;
+
+      try {
+        setTokenInfoLoading(true);
+        const response = await fetch('https://tradesomnia.fun/api/tokens');
+        const data = await response.json();
+
+        if (data.success && data.tokens) {
+          const token = data.tokens.find((t: any) =>
+            t.address.toLowerCase() === tokenAddress.toLowerCase()
+          );
+
+          if (token) {
+            setTokenInfo({
+              name: token.name,
+              symbol: token.symbol,
+              imageUri: token.logo,
+              description: token.description,
+              creator: token.creator,
+              createdAt: token.createdAt,
+              totalSupply: token.totalSupply,
+              active: token.active,
+              sttRaised: token.somiRaised,
+              tokensSold: token.tokensSold,
+              graduatedToDeX: token.graduated,
+            });
+          } else {
+            setTokenInfoError(new Error('Token not found'));
+          }
+        }
+      } catch (error) {
+        setTokenInfoError(error);
+      } finally {
+        setTokenInfoLoading(false);
+      }
+    };
+
+    fetchToken();
+  }, [tokenAddress]);
 
   const displayTokenInfo = tokenInfo;
   const displayPrice = price && price !== "0" ? price : "0.000001";
@@ -209,7 +249,15 @@ const TokenDetail = () => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Created At</p>
-                      <p className="text-sm text-foreground">Sun 14 Sept</p>
+                      <p className="text-sm text-foreground">
+                        {displayTokenInfo.createdAt
+                          ? new Date(displayTokenInfo.createdAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })
+                          : 'Unknown'}
+                      </p>
                     </div>
                   </div>
                 </TabsContent>
