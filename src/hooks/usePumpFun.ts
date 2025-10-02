@@ -344,7 +344,15 @@ export const useAllTokens = () => {
         if (isInitialLoad) {
           setIsLoading(true);
         }
-        const response = await fetch('https://tradesomnia.fun/api/tokens');
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const response = await fetch('https://tradesomnia.fun/api/tokens', {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
         const data = await response.json();
 
         if (data.success && data.tokens && data.tokens.length > 0) {

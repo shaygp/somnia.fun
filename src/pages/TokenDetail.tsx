@@ -259,8 +259,15 @@ const TokenDetail = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Contract Address</p>
                       <div className="flex items-center space-x-2 mt-1">
-                        <p className="text-sm font-mono text-foreground">{tokenAddress.slice(0, 20)}...</p>
-                        <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-primary cursor-pointer" />
+                        <a
+                          href={`https://explorer.somnia.network/address/${tokenAddress}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-mono text-foreground hover:text-primary flex items-center space-x-2"
+                        >
+                          <span>{tokenAddress.slice(0, 20)}...</span>
+                          <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-primary" />
+                        </a>
                       </div>
                     </div>
                     <div>

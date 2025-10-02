@@ -115,20 +115,27 @@ async function getTokenData(tokenAddress: string) {
     let somiRaised = 0;
 
     if (transfersData.items && Array.isArray(transfersData.items)) {
-      for (const transfer of transfersData.items) {
-        if (transfer.from.hash.toLowerCase() === CONTRACT_ADDRESSES.BONDING_CURVE.toLowerCase()) {
-          const amount = parseFloat(formatEther(transfer.total.value));
-          tokensSold += amount;
+      const relevantTransfers = transfersData.items.filter(
+        transfer => transfer.from.hash.toLowerCase() === CONTRACT_ADDRESSES.BONDING_CURVE.toLowerCase()
+      );
 
-          const txResponse = await fetch(
-            `https://explorer.somnia.network/api/v2/transactions/${transfer.transaction_hash}`
-          );
-          const txData = await txResponse.json();
-          if (txData.value) {
-            somiRaised += parseFloat(formatEther(txData.value));
-          }
+      const txPromises = relevantTransfers.map(transfer =>
+        fetch(`https://explorer.somnia.network/api/v2/transactions/${transfer.transaction_hash}`)
+          .then(res => res.json())
+          .catch(() => null)
+      );
+
+      const txResults = await Promise.all(txPromises);
+
+      relevantTransfers.forEach((transfer, index) => {
+        const amount = parseFloat(formatEther(transfer.total.value));
+        tokensSold += amount;
+
+        const txData = txResults[index];
+        if (txData?.value) {
+          somiRaised += parseFloat(formatEther(txData.value));
         }
-      }
+      });
     }
 
     return {
