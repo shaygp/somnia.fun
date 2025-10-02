@@ -120,6 +120,12 @@ async function getTokenData(tokenAddress: string) {
         args: [tokenAddress as `0x${string}`],
       });
       tokenMetadata = metadata;
+      console.log(`Token ${tokenAddress} metadata:`, {
+        name: metadata?.[0],
+        symbol: metadata?.[1],
+        imageUri: metadata?.[2],
+        description: metadata?.[3],
+      });
     } catch (err) {
       console.log('Failed to fetch token metadata from contract:', err);
     }
