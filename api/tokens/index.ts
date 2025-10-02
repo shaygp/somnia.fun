@@ -161,14 +161,35 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const allTokens = await client.readContract({
+    const currentBlock = await client.getBlockNumber();
+    const fromBlock = currentBlock > 5000n ? currentBlock - 5000n : 0n;
+
+    const logs = await client.getLogs({
       address: CONTRACT_ADDRESSES.REGISTRY,
-      abi: REGISTRY_ABI,
-      functionName: 'getAllTokens',
+      event: {
+        type: 'event',
+        name: 'TokenRegistered',
+        inputs: [
+          { type: 'address', indexed: true, name: 'token' }
+        ]
+      },
+      fromBlock,
+      toBlock: 'latest',
     });
 
+    const tokenAddresses = logs
+      .map((log) => {
+        if (log.topics[1]) {
+          return '0x' + log.topics[1].slice(-40);
+        }
+        return null;
+      })
+      .filter((addr): addr is string => addr !== null);
+
+    const uniqueTokens = [...new Set(tokenAddresses)];
+
     const tokensData = await Promise.all(
-      (allTokens as string[]).map((tokenAddress: string) => getTokenData(tokenAddress))
+      uniqueTokens.map((tokenAddress: string) => getTokenData(tokenAddress))
     );
 
     const validTokens = tokensData.filter((token) => token !== null);
