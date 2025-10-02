@@ -234,7 +234,7 @@ const Somnex = () => {
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
               <div className="flex items-center space-x-3 mb-2">
-                <img src="/somnex-logo.svg" alt="Somnex" className="w-10 h-10" />
+                <img src="/somnex.png" alt="Somnex" className="w-10 h-10" />
                 <h1 className="text-3xl font-bold text-primary">Somnex DEX</h1>
               </div>
               <p className="text-muted-foreground">Trade graduated tokens on Somnia's native DEX</p>
@@ -284,7 +284,7 @@ const Somnex = () => {
                       <div className="text-center py-8">
                         <p className="text-muted-foreground mb-4">Swap on Somnex DEX</p>
                         <Button
-                          onClick={() => window.open('https://somnex.xyz/#/', '_blank')}
+                          onClick={() => window.open('https://somnex.xyz', '_blank')}
                           className="bg-primary hover:bg-primary/90"
                         >
                           Go to Somnex
@@ -296,7 +296,7 @@ const Somnex = () => {
                       <div className="text-center py-8">
                         <p className="text-muted-foreground mb-4">Add Liquidity on Somnex DEX</p>
                         <Button
-                          onClick={() => window.open('https://somnex.xyz/#/', '_blank')}
+                          onClick={() => window.open('https://somnex.xyz', '_blank')}
                           className="bg-primary hover:bg-primary/90"
                         >
                           Go to Somnex
@@ -309,7 +309,7 @@ const Somnex = () => {
                         <div className="text-center py-8">
                           <p className="text-muted-foreground mb-4">Pools will be available on Somnex DEX</p>
                           <Button
-                            onClick={() => window.open('https://somnex.xyz/#/', '_blank')}
+                            onClick={() => window.open('https://somnex.xyz', '_blank')}
                             className="bg-primary hover:bg-primary/90"
                           >
                             Go to Somnex
