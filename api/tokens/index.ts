@@ -161,14 +161,27 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const allTokens = await client.readContract({
-      address: CONTRACT_ADDRESSES.TOKEN_FACTORY,
-      abi: TOKEN_FACTORY_ABI,
-      functionName: 'getAllTokens',
-    });
+    const explorerResponse = await fetch(
+      `https://explorer.somnia.network/api/v2/addresses/${CONTRACT_ADDRESSES.TOKEN_FACTORY}/internal-transactions`
+    );
+    const txData = await explorerResponse.json();
+
+    const tokenAddresses: string[] = [];
+
+    if (txData.items && Array.isArray(txData.items)) {
+      for (const tx of txData.items) {
+        if (tx.type === 'create' && tx.created_contract?.hash) {
+          if (tx.created_contract.hash.toLowerCase() !== CONTRACT_ADDRESSES.TOKEN_FACTORY.toLowerCase()) {
+            tokenAddresses.push(tx.created_contract.hash);
+          }
+        }
+      }
+    }
+
+    const uniqueTokens = [...new Set(tokenAddresses)];
 
     const tokensData = await Promise.all(
-      (allTokens as string[]).map((tokenAddress: string) => getTokenData(tokenAddress))
+      uniqueTokens.map((tokenAddress: string) => getTokenData(tokenAddress))
     );
 
     const validTokens = tokensData.filter((token) => token !== null);
