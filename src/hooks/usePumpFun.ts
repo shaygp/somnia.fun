@@ -339,9 +339,11 @@ export const useAllTokens = () => {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const fetchTokensFromAPI = async () => {
+    const fetchTokensFromAPI = async (isInitialLoad = false) => {
       try {
-        setIsLoading(true);
+        if (isInitialLoad) {
+          setIsLoading(true);
+        }
         const response = await fetch('https://tradesomnia.fun/api/tokens');
         const data = await response.json();
 
@@ -354,15 +356,19 @@ export const useAllTokens = () => {
         }
       } catch (err) {
         console.error('Error fetching tokens from API:', err);
-        setTokenAddresses([]);
-        setError(err instanceof Error ? err : new Error('Failed to fetch tokens'));
+        if (isInitialLoad) {
+          setTokenAddresses([]);
+          setError(err instanceof Error ? err : new Error('Failed to fetch tokens'));
+        }
       } finally {
-        setIsLoading(false);
+        if (isInitialLoad) {
+          setIsLoading(false);
+        }
       }
     };
 
-    fetchTokensFromAPI();
-    const interval = setInterval(fetchTokensFromAPI, 10000);
+    fetchTokensFromAPI(true);
+    const interval = setInterval(() => fetchTokensFromAPI(false), 30000);
     return () => clearInterval(interval);
   }, []);
 
