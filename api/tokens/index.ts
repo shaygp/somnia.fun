@@ -62,6 +62,23 @@ const TOKEN_FACTORY_ABI = [
   },
 ] as const;
 
+const MEME_TOKEN_ABI = [
+  {
+    inputs: [],
+    name: 'description',
+    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'tokenImageUri',
+    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+] as const;
+
 const BONDING_CURVE_ABI = [
   {
     inputs: [{ internalType: 'address', name: 'token', type: 'address' }],
@@ -112,6 +129,9 @@ async function getTokenData(tokenAddress: string) {
     const transfersData = await transfersResponse.json();
 
     let tokenMetadata = null;
+    let tokenDescription = '';
+    let tokenImageUri = '';
+
     try {
       const metadata = await client.readContract({
         address: CONTRACT_ADDRESSES.TOKEN_FACTORY as `0x${string}`,
@@ -120,14 +140,30 @@ async function getTokenData(tokenAddress: string) {
         args: [tokenAddress as `0x${string}`],
       });
       tokenMetadata = metadata;
-      console.log(`Token ${tokenAddress} metadata:`, {
-        name: metadata?.[0],
-        symbol: metadata?.[1],
-        imageUri: metadata?.[2],
-        description: metadata?.[3],
-      });
     } catch (err) {
-      console.log('Failed to fetch token metadata from contract:', err);
+      console.log('Failed to fetch token metadata from TokenFactory:', err);
+    }
+
+    try {
+      tokenDescription = await client.readContract({
+        address: tokenAddress as `0x${string}`,
+        abi: MEME_TOKEN_ABI,
+        functionName: 'description',
+      }) as string;
+      console.log(`Token ${tokenAddress} description from contract:`, tokenDescription);
+    } catch (err) {
+      console.log('Failed to fetch description from token contract:', err);
+    }
+
+    try {
+      tokenImageUri = await client.readContract({
+        address: tokenAddress as `0x${string}`,
+        abi: MEME_TOKEN_ABI,
+        functionName: 'tokenImageUri',
+      }) as string;
+      console.log(`Token ${tokenAddress} imageUri from contract:`, tokenImageUri);
+    } catch (err) {
+      console.log('Failed to fetch imageUri from token contract:', err);
     }
 
     let tokensSold = 0;
@@ -159,8 +195,8 @@ async function getTokenData(tokenAddress: string) {
 
     const name = (tokenMetadata?.[0] && tokenMetadata[0] !== '') ? tokenMetadata[0] : explorerTokenData.name || 'Unknown Token';
     const symbol = (tokenMetadata?.[1] && tokenMetadata[1] !== '') ? tokenMetadata[1] : explorerTokenData.token?.symbol || explorerTokenData.name || 'TKN';
-    const imageUri = (tokenMetadata?.[2] && tokenMetadata[2] !== '') ? tokenMetadata[2] : `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`;
-    const description = (tokenMetadata?.[3] && tokenMetadata[3] !== '') ? tokenMetadata[3] : '';
+    const imageUri = tokenImageUri || (tokenMetadata?.[2] && tokenMetadata[2] !== '') ? tokenMetadata[2] : `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`;
+    const description = tokenDescription || (tokenMetadata?.[3] && tokenMetadata[3] !== '') ? tokenMetadata[3] : '';
     const creator = (tokenMetadata?.[4] && tokenMetadata[4] !== '0x0000000000000000000000000000000000000000') ? tokenMetadata[4] : explorerTokenData.creator_address_hash || '0x0';
     const createdAt = tokenMetadata?.[5] ? Number(tokenMetadata[5]) * 1000 : (explorerTokenData.timestamp ? new Date(explorerTokenData.timestamp).getTime() : Date.now());
     const totalSupply = tokenMetadata?.[6] ? formatEther(tokenMetadata[6]) : (explorerTokenData.token?.total_supply ? formatEther(explorerTokenData.token.total_supply) : '1000000000');
