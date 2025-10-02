@@ -166,17 +166,22 @@ export default async function handler(req: any, res: any) {
     );
     const txData = await explorerResponse.json();
 
+    console.log('Explorer response items count:', txData.items?.length || 0);
+
     const tokenAddresses: string[] = [];
 
     if (txData.items && Array.isArray(txData.items)) {
       for (const tx of txData.items) {
         if (tx.type === 'create' && tx.created_contract?.hash) {
+          console.log('Found created contract:', tx.created_contract.hash);
           if (tx.created_contract.hash.toLowerCase() !== CONTRACT_ADDRESSES.TOKEN_FACTORY.toLowerCase()) {
             tokenAddresses.push(tx.created_contract.hash);
           }
         }
       }
     }
+
+    console.log('Token addresses found:', tokenAddresses);
 
     const uniqueTokens = [...new Set(tokenAddresses)];
 
