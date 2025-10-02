@@ -16,6 +16,7 @@ interface TokenCardProps {
   description: string;
   trending?: boolean;
   liquidityPooled?: number;
+  tokensSold?: number;
   showChart?: boolean;
 }
 
@@ -30,7 +31,8 @@ const TokenCard = ({
   holders,
   description,
   trending = false,
-  liquidityPooled = 45.6,
+  liquidityPooled = 0,
+  tokensSold = 0,
   showChart = false
 }: TokenCardProps) => {
   return (
@@ -119,8 +121,8 @@ const TokenCard = ({
           <div className="mt-3 pt-3 border-t border-somnia-border">
             <BondingCurveChart
               tokenSymbol={symbol}
-              currentSupply={500000}
-              currentPrice={parseFloat(price.replace('$', ''))}
+              currentSupply={tokensSold}
+              currentPrice={parseFloat(price.replace(/[^0-9.]/g, ''))}
               liquidityPooled={liquidityPooled}
             />
           </div>

@@ -19,6 +19,7 @@ interface TokenData {
   description: string;
   trending: boolean;
   liquidityPooled?: number;
+  tokensSold?: number;
   showChart?: boolean;
   graduatedToDeX: boolean;
   sttRaised: string;
@@ -46,6 +47,7 @@ const TokenItem = ({ tokenData }: { tokenData: any }) => {
     description: tokenData.description || "just pure internet chaos",
     trending: parseFloat(tokenData.somiRaised) > 100,
     liquidityPooled: parseFloat(tokenData.somiRaised),
+    tokensSold: parseFloat(tokenData.tokensSold),
     showChart: true,
     graduatedToDeX: tokenData.graduated,
     sttRaised: tokenData.somiRaised

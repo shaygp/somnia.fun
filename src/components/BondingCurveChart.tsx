@@ -23,19 +23,29 @@ const BondingCurveChart = ({
 
   const generateCurveData = () => {
     const dataPoints = [];
-    const maxSupply = Math.max(currentSupply, 1000000);
-    const step = maxSupply / 7;
+    const totalSupply = 1000000000;
+    const maxLiquidity = 10000;
 
     for (let i = 0; i <= 7; i++) {
-      const supply = i * step;
-      const priceAtSupply = supply === 0 ? 0.0001 : (0.0001 + (supply / 1000000) * 0.02);
-      const liquidityAtSupply = supply === 0 ? 0 : Math.min((supply / 1000000) * 10000, 10000);
+      const supply = (totalSupply / 7) * i;
+      const liquidityRatio = supply / totalSupply;
+      const liquidityAtSupply = liquidityRatio * maxLiquidity;
+      const priceAtSupply = supply === 0 ? 0.00000001 : liquidityAtSupply / supply;
 
       dataPoints.push({
         supply: Math.round(supply),
         price: parseFloat(priceAtSupply.toFixed(8)),
         liquidity: parseFloat(liquidityAtSupply.toFixed(2))
       });
+    }
+
+    if (currentSupply > 0) {
+      dataPoints.push({
+        supply: currentSupply,
+        price: currentPrice,
+        liquidity: liquidityPooled
+      });
+      dataPoints.sort((a, b) => a.supply - b.supply);
     }
 
     return dataPoints;
