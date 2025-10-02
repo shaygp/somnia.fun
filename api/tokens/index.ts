@@ -103,22 +103,32 @@ const client = createPublicClient({
 
 async function getTokenData(tokenAddress: string) {
   try {
-    const explorerTokenResponse = await fetch(
-      `https://explorer.somnia.network/api/v2/addresses/${tokenAddress}`
-    );
-    const explorerTokenData = await explorerTokenResponse.json();
+    const [explorerTokenResponse, transfersResponse] = await Promise.all([
+      fetch(`https://explorer.somnia.network/api/v2/addresses/${tokenAddress}`),
+      fetch(`https://explorer.somnia.network/api/v2/tokens/${tokenAddress}/transfers`)
+    ]);
 
-    let curveInfo;
-    let curveFailed = false;
-    try {
-      curveInfo = await client.readContract({
-        address: CONTRACT_ADDRESSES.BONDING_CURVE,
-        abi: BONDING_CURVE_ABI,
-        functionName: 'getCurveInfo',
-        args: [tokenAddress as `0x${string}`],
-      });
-    } catch (e) {
-      curveFailed = true;
+    const explorerTokenData = await explorerTokenResponse.json();
+    const transfersData = await transfersResponse.json();
+
+    let tokensSold = 0;
+    let somiRaised = 0;
+
+    if (transfersData.items && Array.isArray(transfersData.items)) {
+      for (const transfer of transfersData.items) {
+        if (transfer.from.hash.toLowerCase() === CONTRACT_ADDRESSES.BONDING_CURVE.toLowerCase()) {
+          const amount = parseFloat(formatEther(transfer.total.value));
+          tokensSold += amount;
+
+          const txResponse = await fetch(
+            `https://explorer.somnia.network/api/v2/transactions/${transfer.transaction_hash}`
+          );
+          const txData = await txResponse.json();
+          if (txData.value) {
+            somiRaised += parseFloat(formatEther(txData.value));
+          }
+        }
+      }
     }
 
     return {
@@ -129,11 +139,11 @@ async function getTokenData(tokenAddress: string) {
       description: '',
       creator: explorerTokenData.creator_address_hash || '0x0',
       createdAt: explorerTokenData.timestamp ? new Date(explorerTokenData.timestamp).getTime() : Date.now(),
-      totalSupply: '1000000000',
-      active: !curveFailed && curveInfo ? curveInfo[5] : true,
-      somiRaised: !curveFailed && curveInfo && curveInfo[1] ? formatEther(curveInfo[1]) : '0',
-      tokensSold: !curveFailed && curveInfo && curveInfo[0] ? formatEther(curveInfo[0]) : '0',
-      graduated: !curveFailed && curveInfo ? curveInfo[4] : false,
+      totalSupply: explorerTokenData.token?.total_supply ? formatEther(explorerTokenData.token.total_supply) : '1000000000',
+      active: true,
+      somiRaised: somiRaised.toString(),
+      tokensSold: tokensSold.toString(),
+      graduated: somiRaised >= 10000,
       tradingLink: `https://tradesomnia.fun/token/${tokenAddress}`,
     };
   } catch (error) {
