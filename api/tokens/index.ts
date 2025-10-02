@@ -111,6 +111,19 @@ async function getTokenData(tokenAddress: string) {
     const explorerTokenData = await explorerTokenResponse.json();
     const transfersData = await transfersResponse.json();
 
+    let tokenMetadata = null;
+    try {
+      const metadata = await client.readContract({
+        address: CONTRACT_ADDRESSES.TOKEN_FACTORY as `0x${string}`,
+        abi: TOKEN_FACTORY_ABI,
+        functionName: 'getTokenMetadata',
+        args: [tokenAddress as `0x${string}`],
+      });
+      tokenMetadata = metadata;
+    } catch (err) {
+      console.log('Failed to fetch token metadata from contract:', err);
+    }
+
     let tokensSold = 0;
     let somiRaised = 0;
 
@@ -138,15 +151,23 @@ async function getTokenData(tokenAddress: string) {
       });
     }
 
+    const name = tokenMetadata?.[0] || explorerTokenData.name || 'Unknown Token';
+    const symbol = tokenMetadata?.[1] || explorerTokenData.token?.symbol || explorerTokenData.name || 'TKN';
+    const imageUri = tokenMetadata?.[2] || `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`;
+    const description = tokenMetadata?.[3] || '';
+    const creator = tokenMetadata?.[4] || explorerTokenData.creator_address_hash || '0x0';
+    const createdAt = tokenMetadata?.[5] ? Number(tokenMetadata[5]) * 1000 : (explorerTokenData.timestamp ? new Date(explorerTokenData.timestamp).getTime() : Date.now());
+    const totalSupply = tokenMetadata?.[6] ? formatEther(tokenMetadata[6]) : (explorerTokenData.token?.total_supply ? formatEther(explorerTokenData.token.total_supply) : '1000000000');
+
     return {
       address: tokenAddress,
-      name: explorerTokenData.name || 'Unknown Token',
-      symbol: explorerTokenData.token?.symbol || explorerTokenData.name || 'TKN',
-      logo: `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`,
-      description: '',
-      creator: explorerTokenData.creator_address_hash || '0x0',
-      createdAt: explorerTokenData.timestamp ? new Date(explorerTokenData.timestamp).getTime() : Date.now(),
-      totalSupply: explorerTokenData.token?.total_supply ? formatEther(explorerTokenData.token.total_supply) : '1000000000',
+      name,
+      symbol,
+      logo: imageUri,
+      description,
+      creator,
+      createdAt,
+      totalSupply,
       active: true,
       somiRaised: somiRaised.toString(),
       tokensSold: tokensSold.toString(),

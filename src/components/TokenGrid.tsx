@@ -191,7 +191,7 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
                 --filter
               </Button>
               {filterOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-somnia-card border border-somnia-border rounded shadow-lg z-10">
+                <div className="absolute right-0 mt-2 w-48 bg-somnia-card border border-somnia-border rounded shadow-lg z-50">
                   <button
                     className="w-full text-left px-4 py-2 hover:bg-somnia-hover text-foreground"
                     onClick={() => { setActiveTab("all"); setFilterOpen(false); }}

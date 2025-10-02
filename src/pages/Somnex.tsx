@@ -99,6 +99,9 @@ const Somnex = () => {
 
   const graduatedTokens = tokens?.filter(token => token.graduated) || [];
 
+  console.log('Somnex - All tokens:', tokens);
+  console.log('Somnex - Graduated tokens:', graduatedTokens);
+
 
   const handleSwapTokens = () => {
     const temp = fromToken;
@@ -278,299 +281,40 @@ const Somnex = () => {
                     </TabsList>
 
                     <TabsContent value="swap" className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>From</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            placeholder="0.0"
-                            value={fromAmount}
-                            onChange={(e) => setFromAmount(e.target.value)}
-                            className="flex-1 bg-somnia-bg border-somnia-border"
-                          />
-                          <select
-                            value={fromToken}
-                            onChange={(e) => setFromToken(e.target.value)}
-                            className="px-4 py-2 bg-somnia-bg border border-somnia-border rounded-md text-primary"
-                          >
-                            <option value="SOMI">SOMI</option>
-                            <option value="WSOMI">WSOMI</option>
-                            <option value="USDT">USDT</option>
-                            {graduatedTokens.map(token => (
-                              <option key={token} value={token}>
-                                {token.slice(0, 6)}...
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-center">
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground mb-4">Swap on Somnex DEX</p>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleSwapTokens}
-                          className="rounded-full hover:bg-somnia-hover"
+                          onClick={() => window.open('https://somnex.finance', '_blank')}
+                          className="bg-primary hover:bg-primary/90"
                         >
-                          <ArrowDownUp className="h-4 w-4" />
+                          Go to Somnex
                         </Button>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>To</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            placeholder="0.0"
-                            value={toAmount}
-                            readOnly
-                            className="flex-1 bg-somnia-bg border-somnia-border"
-                          />
-                          <select
-                            value={toToken}
-                            onChange={(e) => setToToken(e.target.value)}
-                            className="px-4 py-2 bg-somnia-bg border border-somnia-border rounded-md text-primary"
-                          >
-                            <option value="USDT">USDT</option>
-                            <option value="SOMI">SOMI</option>
-                            <option value="WSOMI">WSOMI</option>
-                            {graduatedTokens.map(token => (
-                              <option key={token} value={token}>
-                                {token.slice(0, 6)}...
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Slippage Tolerance</Label>
-                        <div className="flex gap-2">
-                          <Button
-                            variant={slippage === "0.1" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setSlippage("0.1")}
-                            className={slippage === "0.1" ? "bg-primary" : ""}
-                          >
-                            0.1%
-                          </Button>
-                          <Button
-                            variant={slippage === "0.5" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setSlippage("0.5")}
-                            className={slippage === "0.5" ? "bg-primary" : ""}
-                          >
-                            0.5%
-                          </Button>
-                          <Button
-                            variant={slippage === "1" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setSlippage("1")}
-                            className={slippage === "1" ? "bg-primary" : ""}
-                          >
-                            1%
-                          </Button>
-                          <Input
-                            type="number"
-                            placeholder="Custom"
-                            value={slippage}
-                            onChange={(e) => setSlippage(e.target.value)}
-                            className="w-24 bg-somnia-bg border-somnia-border"
-                          />
-                        </div>
-                      </div>
-
-                      <Button
-                        className="w-full bg-primary hover:bg-primary/90"
-                        disabled={!isConnected || !fromAmount || isSwapping}
-                        onClick={handleSwap}
-                      >
-                        {!isConnected ? "Connect Wallet" : isSwapping ? "Swapping..." : "Swap"}
-                      </Button>
-
-                      <div className="text-center text-xs text-muted-foreground">
-                        <p>Platform Fee: 0.3% | Min Slippage: 0.1%</p>
                       </div>
                     </TabsContent>
 
                     <TabsContent value="liquidity" className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Token A</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            placeholder="0.0"
-                            value={tokenAAmount}
-                            onChange={(e) => setTokenAAmount(e.target.value)}
-                            className="flex-1 bg-somnia-bg border-somnia-border"
-                          />
-                          <select
-                            value={selectedTokenA}
-                            onChange={(e) => setSelectedTokenA(e.target.value)}
-                            className="px-4 py-2 bg-somnia-bg border border-somnia-border rounded-md text-primary"
-                          >
-                            <option value="SOMI">SOMI</option>
-                            <option value="WSOMI">WSOMI</option>
-                            <option value="USDT">USDT</option>
-                            {graduatedTokens.map(token => (
-                              <option key={token} value={token}>
-                                {token.slice(0, 6)}...
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Token B</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            placeholder="0.0"
-                            value={tokenBAmount}
-                            onChange={(e) => setTokenBAmount(e.target.value)}
-                            className="flex-1 bg-somnia-bg border-somnia-border"
-                          />
-                          <select
-                            value={selectedTokenB}
-                            onChange={(e) => setSelectedTokenB(e.target.value)}
-                            className="px-4 py-2 bg-somnia-bg border border-somnia-border rounded-md text-primary"
-                          >
-                            <option value="WSOMI">WSOMI</option>
-                            <option value="SOMI">SOMI</option>
-                            <option value="USDT">USDT</option>
-                            {graduatedTokens.map(token => (
-                              <option key={token} value={token}>
-                                {token.slice(0, 6)}...
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="p-3 bg-somnia-bg rounded-lg space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Share of Pool</span>
-                          <span>0.00%</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Minimum {selectedTokenA} Deposited</span>
-                          <span>{(parseFloat(tokenAAmount || "0") * 0.95).toFixed(6)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Minimum {selectedTokenB} Deposited</span>
-                          <span>{(parseFloat(tokenBAmount || "0") * 0.95).toFixed(6)}</span>
-                        </div>
-                      </div>
-
-                      <Button
-                        className="w-full bg-primary hover:bg-primary/90"
-                        disabled={!isConnected || !tokenAAmount || !tokenBAmount || isAddingLiquidity}
-                        onClick={handleAddLiquidity}
-                      >
-                        {!isConnected ? "Connect Wallet" : isAddingLiquidity ? "Adding Liquidity..." : "Add Liquidity"}
-                      </Button>
-
-                      <div className="text-center text-xs text-muted-foreground">
-                        <p>Earn 0.25% of all trades on this pair</p>
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground mb-4">Add Liquidity on Somnex DEX</p>
+                        <Button
+                          onClick={() => window.open('https://somnex.finance', '_blank')}
+                          className="bg-primary hover:bg-primary/90"
+                        >
+                          Go to Somnex
+                        </Button>
                       </div>
                     </TabsContent>
 
                     <TabsContent value="pools" className="space-y-4">
                       <div className="space-y-4">
-                        <div className="grid grid-cols-1 gap-4">
-                          <div className="p-4 bg-somnia-bg rounded-lg">
-                            <div className="flex justify-between items-center mb-2">
-                              <div className="flex items-center gap-2">
-                                <div className="font-medium">SOMI / WSOMI</div>
-                                <Badge variant="secondary" className="text-xs">0.3%</Badge>
-                              </div>
-                              <div className="text-sm text-green-500">24.5% APR</div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              <div>
-                                <div className="text-muted-foreground">TVL</div>
-                                <div className="font-medium">$1.8M</div>
-                              </div>
-                              <div>
-                                <div className="text-muted-foreground">24h Volume</div>
-                                <div className="font-medium">$320K</div>
-                              </div>
-                            </div>
-                            <Button size="sm" className="w-full mt-3 bg-primary hover:bg-primary/90">
-                              Add Liquidity
-                            </Button>
-                          </div>
-
-                          <div className="p-4 bg-somnia-bg rounded-lg">
-                            <div className="flex justify-between items-center mb-2">
-                              <div className="flex items-center gap-2">
-                                <div className="font-medium">SOMI / USDT</div>
-                                <Badge variant="secondary" className="text-xs">0.3%</Badge>
-                              </div>
-                              <div className="text-sm text-green-500">18.2% APR</div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              <div>
-                                <div className="text-muted-foreground">TVL</div>
-                                <div className="font-medium">$2.4M</div>
-                              </div>
-                              <div>
-                                <div className="text-muted-foreground">24h Volume</div>
-                                <div className="font-medium">$450K</div>
-                              </div>
-                            </div>
-                            <Button size="sm" className="w-full mt-3 bg-primary hover:bg-primary/90">
-                              Add Liquidity
-                            </Button>
-                          </div>
-
-                          {graduatedTokens.slice(0, 3).map(tokenAddress => {
-                            const { tokenInfo } = useTokenInfo(tokenAddress);
-                            if (!tokenInfo) return null;
-
-                            return (
-                              <div key={tokenAddress} className="p-4 bg-somnia-bg rounded-lg">
-                                <div className="flex justify-between items-center mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <div className="font-medium">{tokenInfo.symbol} / SOMI</div>
-                                    <Badge variant="secondary" className="text-xs">0.3%</Badge>
-                                  </div>
-                                  <div className="text-sm text-green-500">15.8% APR</div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                  <div>
-                                    <div className="text-muted-foreground">TVL</div>
-                                    <div className="font-medium">$125K</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-muted-foreground">24h Volume</div>
-                                    <div className="font-medium">$45K</div>
-                                  </div>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  className="w-full mt-3 bg-primary hover:bg-primary/90"
-                                  onClick={() => {
-                                    setSelectedTokenA(tokenInfo.symbol);
-                                    setSelectedTokenB("SOMI");
-                                  }}
-                                >
-                                  Add Liquidity
-                                </Button>
-                              </div>
-                            );
-                          })}
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground mb-4">Pools will be available on Somnex DEX</p>
+                          <Button
+                            onClick={() => window.open('https://somnex.finance', '_blank')}
+                            className="bg-primary hover:bg-primary/90"
+                          >
+                            Go to Somnex
+                          </Button>
                         </div>
-
-                        {graduatedTokens.length === 0 && (
-                          <div className="text-center py-8">
-                            <p className="text-muted-foreground mb-4">No graduated tokens yet</p>
-                            <p className="text-sm text-muted-foreground">
-                              Pools will appear here when tokens graduate from the bonding curve
-                            </p>
-                          </div>
-                        )}
                       </div>
                     </TabsContent>
                   </Tabs>
