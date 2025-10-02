@@ -120,13 +120,23 @@ const client = createPublicClient({
 
 async function getTokenData(tokenAddress: string) {
   try {
-    const [explorerTokenResponse, transfersResponse] = await Promise.all([
+    const [explorerTokenResponse, transfersResponse, tokenTxResponse] = await Promise.all([
       fetch(`https://explorer.somnia.network/api/v2/addresses/${tokenAddress}`),
-      fetch(`https://explorer.somnia.network/api/v2/tokens/${tokenAddress}/transfers`)
+      fetch(`https://explorer.somnia.network/api/v2/tokens/${tokenAddress}/transfers`),
+      fetch(`https://explorer.somnia.network/api/v2/addresses/${tokenAddress}/transactions?filter=to`)
     ]);
 
     const explorerTokenData = await explorerTokenResponse.json();
     const transfersData = await transfersResponse.json();
+    const tokenTxData = await tokenTxResponse.json();
+
+    let actualCreator = explorerTokenData.creator_address_hash || '0x0';
+    if (tokenTxData.items && tokenTxData.items.length > 0) {
+      const oldestTx = tokenTxData.items[tokenTxData.items.length - 1];
+      if (oldestTx && oldestTx.from && oldestTx.from.hash) {
+        actualCreator = oldestTx.from.hash;
+      }
+    }
 
     let tokenMetadata = null;
     let tokenDescription = '';
@@ -197,7 +207,7 @@ async function getTokenData(tokenAddress: string) {
     const symbol = (tokenMetadata?.[1] && tokenMetadata[1] !== '') ? tokenMetadata[1] : explorerTokenData.token?.symbol || explorerTokenData.name || 'TKN';
     const imageUri = tokenImageUri || (tokenMetadata?.[2] && tokenMetadata[2] !== '') ? tokenMetadata[2] : `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`;
     const description = tokenDescription || (tokenMetadata?.[3] && tokenMetadata[3] !== '') ? tokenMetadata[3] : '';
-    const creator = (tokenMetadata?.[4] && tokenMetadata[4] !== '0x0000000000000000000000000000000000000000') ? tokenMetadata[4] : explorerTokenData.creator_address_hash || '0x0';
+    const creator = actualCreator;
     const createdAt = tokenMetadata?.[5] ? Number(tokenMetadata[5]) * 1000 : (explorerTokenData.timestamp ? new Date(explorerTokenData.timestamp).getTime() : Date.now());
     const totalSupply = tokenMetadata?.[6] ? formatEther(tokenMetadata[6]) : (explorerTokenData.token?.total_supply ? formatEther(explorerTokenData.token.total_supply) : '1000000000');
 

@@ -77,9 +77,11 @@ const TokenCard = ({
         </div>
 
         {/* Description */}
-        <p className="text-xs text-muted-foreground mb-3 line-clamp-2 leading-relaxed">
-          # {description}
-        </p>
+        {description && (
+          <p className="text-xs text-muted-foreground mb-3 line-clamp-2 leading-relaxed">
+            # {description}
+          </p>
+        )}
 
         {/* Terminal-style stats */}
         <div className="space-y-1 mb-3 text-xs">
