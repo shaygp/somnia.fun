@@ -9,7 +9,7 @@ import { parseEther } from "viem";
 import { usePumpFun, useTokenPrice, useTokenInfo, useTokenBalance } from "@/hooks/usePumpFun";
 import { logTransaction, validateTransactionHash } from "@/utils/debug";
 import { useAccount, useWaitForTransactionReceipt, useChainId, useSwitchChain, useReadContract } from 'wagmi';
-import { somniaTestnetChain } from '@/config/wagmi';
+import { somniaMainnetChain } from '@/config/wagmi';
 import { CONTRACT_ADDRESSES, MEME_TOKEN_ABI } from "@/config/contracts";
 import { useSomnexGraduation } from "@/hooks/useSomnex";
 import { Link } from "react-router-dom";
@@ -85,15 +85,15 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
 
   const handleNetworkSwitch = async () => {
     try {
-      await switchChain({ chainId: somniaTestnetChain.id });
+      await switchChain({ chainId: somniaMainnetChain.id });
       toast({
         title: "Network Switched",
-        description: "Successfully switched to Somnia Testnet",
+        description: "Successfully switched to Somnia Mainnet",
       });
     } catch (error) {
       toast({
         title: "Network Switch Failed",
-        description: "Please manually switch to Somnia Testnet in your wallet",
+        description: "Please manually switch to Somnia Mainnet in your wallet",
         variant: "destructive",
       });
     }
@@ -109,10 +109,10 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
       return;
     }
 
-    if (chain?.id !== somniaTestnetChain.id) {
+    if (chain?.id !== somniaMainnetChain.id) {
       toast({
         title: "Wrong Network",
-        description: "Please switch to Somnia Testnet to trade",
+        description: "Please switch to Somnia Mainnet to trade",
         variant: "destructive"
       });
       handleNetworkSwitch();
@@ -126,7 +126,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
     try {
       toast({
         title: "Purchase Initiated",
-        description: `Buying ${sttAmount} STT worth of ${tokenInfo.symbol} tokens...`,
+        description: `Buying ${sttAmount} SOMI worth of ${tokenInfo.symbol} tokens...`,
       });
 
       const hash = await buyTokens(tokenAddress, sttAmount);
@@ -274,10 +274,10 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
       return;
     }
 
-    if (chain?.id !== somniaTestnetChain.id) {
+    if (chain?.id !== somniaMainnetChain.id) {
       toast({
         title: "Wrong Network",
-        description: "Please switch to Somnia Testnet to trade",
+        description: "Please switch to Somnia Mainnet to trade",
         variant: "destructive"
       });
       handleNetworkSwitch();
@@ -381,8 +381,8 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
         ? `You have successfully purchased ${tokenInfo.symbol} tokens` 
         : `You have successfully sold ${tokenInfo.symbol} tokens`;
       const amount = isBuy 
-        ? `${sttAmount} STT → ${tokenInfo.symbol}` 
-        : `${tokenAmount} ${tokenInfo.symbol} → STT`;
+        ? `${sttAmount} SOMI → ${tokenInfo.symbol}` 
+        : `${tokenAmount} ${tokenInfo.symbol} → SOMI`;
 
       setSuccessData({
         title,
@@ -472,7 +472,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
 
   const progressToGraduation = tokenInfo.graduatedToDeX ?
     100 :
-    (parseFloat(tokenInfo.sttRaised) / 1000) * 100;
+    (parseFloat(tokenInfo.sttRaised) / 10000) * 100;
 
   return (
     <Card className="bg-card border-border">
@@ -490,7 +490,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
             </div>
           </div>
           <div className="text-right">
-            <p className="font-bold text-lg">{parseFloat(price).toFixed(8)} STT</p>
+            <p className="font-bold text-lg">{parseFloat(price).toFixed(8)} SOMI</p>
             <p className="text-xs text-muted-foreground">per token</p>
           </div>
         </CardTitle>
@@ -510,7 +510,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span>Progress to Somnex DEX</span>
-            <span>{tokenInfo.graduatedToDeX ? "Graduated to Somnex!" : `${tokenInfo.sttRaised}/1000 STT`}</span>
+            <span>{tokenInfo.graduatedToDeX ? "Graduated to Somnex!" : `${tokenInfo.sttRaised}/10,000 SOMI`}</span>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div
@@ -521,7 +521,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
           {tokenInfo.graduatedToDeX && (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
-                This token has graduated to Somnex DEX! 36 STT locked permanently.
+                This token has graduated to Somnex DEX! 15,000 SOMI locked permanently.
               </p>
               <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/90">
                 <Link to="/somnex">
@@ -547,10 +547,10 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
                     return;
                   }
 
-                  if (chain?.id !== somniaTestnetChain.id) {
+                  if (chain?.id !== somniaMainnetChain.id) {
                     toast({
                       title: "Wrong Network",
-                      description: "Please switch to Somnia Testnet to graduate token",
+                      description: "Please switch to Somnia Mainnet to graduate token",
                       variant: "destructive"
                     });
                     handleNetworkSwitch();
@@ -558,8 +558,19 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
                   }
 
                   try {
-                    await graduateToken();
-                    await listOnSomnex();
+                    toast({
+                      title: "Graduating Token",
+                      description: "Listing token on Somnex DEX with locked liquidity...",
+                    });
+
+                    const hash = await graduateToken();
+
+                    if (hash) {
+                      toast({
+                        title: "Graduation Successful!",
+                        description: "Token is now listed on Somnex DEX with permanent liquidity lock",
+                      });
+                    }
                   } catch (error: any) {
                     console.error("Graduation error:", error);
                   }
@@ -588,7 +599,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
 
             <TabsContent value="buy" className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">STT Amount</label>
+                <label className="text-sm font-medium">SOMI Amount</label>
                 <Input
                   type="number"
                   placeholder="0.01"
@@ -667,7 +678,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
                 <div className="flex justify-between text-sm">
                   <span>You will receive:</span>
                   <span className="font-medium">
-                    ~{tokenAmount ? (parseFloat(tokenAmount) * parseFloat(price)).toFixed(6) : "0"} STT
+                    ~{tokenAmount ? (parseFloat(tokenAmount) * parseFloat(price)).toFixed(6) : "0"} SOMI
                   </span>
                 </div>
               </div>

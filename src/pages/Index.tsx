@@ -30,7 +30,7 @@ const Index = () => {
                     <ol className="list-decimal list-inside space-y-1">
                       <li>Connect your wallet to Somnia Testnet</li>
                       <li>Click "Create Token" and fill in your token details</li>
-                      <li>Pay the creation fee (0.1 STT)</li>
+                      <li>Pay the creation fee (10 SOMI)</li>
                       <li>Your token will be live on a bonding curve</li>
                     </ol>
                   </div>
@@ -38,8 +38,8 @@ const Index = () => {
                     <h3 className="font-semibold text-foreground mb-2">Trading & Graduation:</h3>
                     <ul className="list-disc list-inside space-y-1">
                       <li>Tokens start on bonding curves for price discovery</li>
-                      <li>When 1000 STT is raised, tokens graduate to Somnex DEX</li>
-                      <li>36 STT is permanently locked as liquidity</li>
+                      <li>When 10,000 SOMI is raised, tokens graduate to Somnex DEX</li>
+                      <li>15,000 SOMI is permanently locked as liquidity</li>
                       <li>Graduated tokens can be traded on the DEX</li>
                     </ul>
                   </div>

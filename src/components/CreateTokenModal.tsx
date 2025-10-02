@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { usePumpFun } from "@/hooks/usePumpFun";
 import { useWaitForTransactionReceipt, useAccount, useChainId, useSwitchChain } from 'wagmi';
-import { somniaTestnetChain } from '@/config/wagmi';
+import { somniaMainnetChain } from '@/config/wagmi';
 import SuccessModal from "@/components/SuccessModal";
 import { logTransaction, validateTransactionHash } from "@/utils/debug";
 
@@ -36,7 +36,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
     description: "",
     imageUri: "",
     initialPrice: "0.0001",
-    creationFee: "0.1"
+    creationFee: "10"
   });
 
   const { isLoading: isConfirming, isSuccess, isError, error: txError } = useWaitForTransactionReceipt({
@@ -64,15 +64,15 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
 
   const handleNetworkSwitch = async () => {
     try {
-      await switchChain({ chainId: somniaTestnetChain.id });
+      await switchChain({ chainId: somniaMainnetChain.id });
       toast({
         title: "Network Switched",
-        description: "Successfully switched to Somnia Testnet",
+        description: "Successfully switched to Somnia Mainnet",
       });
     } catch (error) {
       toast({
         title: "Network Switch Failed",
-        description: "Please manually switch to Somnia Testnet in your wallet",
+        description: "Please manually switch to Somnia Mainnet in your wallet",
         variant: "destructive",
       });
     }
@@ -88,10 +88,10 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
       return;
     }
 
-    if (chain?.id !== somniaTestnetChain.id) {
+    if (chain?.id !== somniaMainnetChain.id) {
       toast({
         title: "Wrong Network",
-        description: "Please switch to Somnia Testnet to create tokens",
+        description: "Please switch to Somnia Mainnet to create tokens",
         variant: "destructive"
       });
       await handleNetworkSwitch();
@@ -244,19 +244,19 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Creation Fee:</span>
-            <span className="text-primary font-medium">{formData.creationFee} STT</span>
+            <span className="text-primary font-medium">{formData.creationFee} SOMI</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Initial Price:</span>
-            <span className="text-foreground">{formData.initialPrice} STT</span>
+            <span className="text-foreground">{formData.initialPrice} SOMI</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Liquidity Pool:</span>
-            <span className="text-foreground">1000 STT threshold</span>
+            <span className="text-muted-foreground">Graduation Threshold:</span>
+            <span className="text-foreground">10,000 SOMI</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Locked Liquidity:</span>
-            <span className="text-accent">36 STT (permanent)</span>
+            <span className="text-accent">15,000 SOMI (permanent)</span>
           </div>
         </div>
       </div>
@@ -267,16 +267,16 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
             <p className="text-yellow-600 text-sm">Please connect your wallet to create a token</p>
           </div>
         </div>
-      ) : chain?.id !== somniaTestnetChain.id ? (
+      ) : chain?.id !== somniaMainnetChain.id ? (
         <div className="space-y-4">
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-            <p className="text-red-600 text-sm">Please switch to Somnia Testnet to create tokens</p>
+            <p className="text-red-600 text-sm">Please switch to Somnia Mainnet to create tokens</p>
           </div>
           <Button
             onClick={handleNetworkSwitch}
             className="w-full bg-red-500 hover:bg-red-600 text-white font-medium"
           >
-            Switch to Somnia Testnet
+            Switch to Somnia Mainnet
           </Button>
         </div>
       ) : (
@@ -291,7 +291,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
               {isConfirming ? "Confirming..." : "Creating..."}
             </>
           ) : (
-            `Create Token for ${formData.creationFee} STT`
+            `Create Token for ${formData.creationFee} SOMI`
           )}
         </Button>
       )}
@@ -316,7 +316,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
             {txHash}
           </p>
           <a
-            href={`https://shannon-explorer.somnia.network/tx/${txHash}`}
+            href={`https://explorer.somnia.network/tx/${txHash}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-primary hover:underline mt-2 inline-block"
@@ -400,7 +400,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
               description: "",
               imageUri: "",
               initialPrice: "0.0001",
-              creationFee: "0.1"
+              creationFee: "10"
             });
             onClose();
           }}

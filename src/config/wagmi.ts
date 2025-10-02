@@ -23,8 +23,8 @@ export const somniaTestnetChain = {
   name: 'Somnia Testnet',
   nativeCurrency: {
     decimals: 18,
-    name: 'STT',
-    symbol: 'STT',
+    name: 'SOMI',
+    symbol: 'SOMI',
   },
   rpcUrls: {
     public: { http: ['https://dream-rpc.somnia.network/'] },

@@ -107,7 +107,7 @@ const SuccessModal = ({
                     className="h-8 px-2 text-primary hover:text-primary/80"
                   >
                     <a
-                      href={`https://shannon-explorer.somnia.network/tx/${txHash}`}
+                      href={`https://explorer.somnia.network/tx/${txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center space-x-1"
@@ -138,7 +138,7 @@ const SuccessModal = ({
                 className="flex-1 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
               >
                 <a
-                  href={`https://shannon-explorer.somnia.network/tx/${txHash}`}
+                  href={`https://explorer.somnia.network/tx/${txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center space-x-2"

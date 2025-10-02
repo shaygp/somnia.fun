@@ -1,19 +1,37 @@
 import { TrendingUp, Users, DollarSign, Activity } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { useReadContract } from "wagmi";
+import { CONTRACT_ADDRESSES, TOKEN_FACTORY_ABI } from "@/config/contracts";
+import { useEffect, useState } from "react";
 
 const StatsCards = () => {
+  const [totalTokens, setTotalTokens] = useState<number>(0);
+  const [totalMarketCap, setTotalMarketCap] = useState<string>("0");
+
+  const { data: allTokens } = useReadContract({
+    address: CONTRACT_ADDRESSES.TOKEN_FACTORY as `0x${string}`,
+    abi: TOKEN_FACTORY_ABI,
+    functionName: 'getAllTokens',
+  });
+
+  useEffect(() => {
+    if (allTokens && Array.isArray(allTokens)) {
+      setTotalTokens(allTokens.length);
+    }
+  }, [allTokens]);
+
   const stats = [
     {
-      title: "Total Users",
-      value: "114",
-      change: "+2.1%",
-      icon: Users,
+      title: "Total Tokens",
+      value: totalTokens.toString(),
+      change: "+",
+      icon: Activity,
       color: "text-somnia-purple"
     },
     {
-      title: "Testnet Market Cap",
-      value: "8.2K STT",
-      change: "+5.4%",
+      title: "Market Cap",
+      value: `${totalMarketCap} SOMI`,
+      change: "+",
       icon: TrendingUp,
       color: "text-primary"
     }

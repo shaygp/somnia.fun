@@ -18,96 +18,71 @@ const TokenDetail = () => {
   const { tokenInfo, isLoading: tokenInfoLoading, error: tokenInfoError } = useTokenInfo(tokenAddress || "");
   const { price, isLoading: priceLoading, error: priceError } = useTokenPrice(tokenAddress || "");
   
-  const isDemoToken = tokenAddress === '0x1234567890123456789012345678901234567890';
-
-  console.log('TokenDetail - tokenAddress:', tokenAddress, 'isDemoToken:', isDemoToken);
+  console.log('TokenDetail - tokenAddress:', tokenAddress);
   console.log('TokenDetail - tokenInfoLoading:', tokenInfoLoading, 'priceLoading:', priceLoading);
   console.log('TokenDetail - tokenInfo:', tokenInfo, 'price:', price);
   console.log('TokenDetail - errors:', { tokenInfoError, priceError });
-  
-  const demoTokenInfo = {
-    name: "Somnia Cat",
-    symbol: "SOMCAT",
-    imageUri: "/catlayer.svg",
-    description: "The purrfect meme token for Somnia! Join the cat revolution on the blockchain. This token represents all the cats who believe in decentralized finance and want to take over the world one purr at a time.",
-    sttRaised: "12.5",
-    tokensSold: "2500000",
-    totalSupply: "1000000000",
-    creator: "0xCaF3CaF3CaF3CaF3CaF3CaF3CaF3CaF3CaF3CaF3",
-    createdAt: "1704096000",
-    graduatedToDeX: false,
-    tokenAddress: tokenAddress || ""
-  };
-  
-  const displayTokenInfo = isDemoToken ? demoTokenInfo : tokenInfo;
-  const displayPrice = isDemoToken ? "0.000005" : (price && price !== "0" ? price : "0.000001");
+
+  const displayTokenInfo = tokenInfo;
+  const displayPrice = price && price !== "0" ? price : "0.000001";
   
   if (!tokenAddress) {
     return <div>Token not found</div>;
   }
 
-  // For demo token, skip loading checks
-  if (!isDemoToken) {
-    // Show loading state only if both are still loading and no errors
-    if ((tokenInfoLoading || priceLoading) && !tokenInfoError && !priceError) {
-      return (
-        <div className="min-h-screen bg-somnia-bg text-foreground relative flex items-center justify-center">
-          <AnimatedBackground />
-          <div className="flex flex-col items-center space-y-4 relative z-10">
-            <Loader2 className="w-6 h-6 animate-spin" />
-            <span>Loading token data...</span>
-            <div className="text-sm text-muted-foreground text-center">
-              <p>Fetching from blockchain...</p>
-              <p className="font-mono text-xs mt-1">{tokenAddress?.slice(0, 8)}...{tokenAddress?.slice(-6)}</p>
-            </div>
+  if ((tokenInfoLoading || priceLoading) && !tokenInfoError && !priceError) {
+    return (
+      <div className="min-h-screen bg-somnia-bg text-foreground relative flex items-center justify-center">
+        <AnimatedBackground />
+        <div className="flex flex-col items-center space-y-4 relative z-10">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>Loading token data...</span>
+          <div className="text-sm text-muted-foreground text-center">
+            <p>Fetching from blockchain...</p>
+            <p className="font-mono text-xs mt-1">{tokenAddress?.slice(0, 8)}...{tokenAddress?.slice(-6)}</p>
           </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    // Show error state only for critical tokenInfo errors, not price errors
-    if (tokenInfoError) {
-      return (
-        <div className="min-h-screen bg-somnia-bg text-foreground relative flex items-center justify-center">
-          <AnimatedBackground />
-          <div className="relative z-10 text-center">
-            <h2 className="text-xl font-bold text-red-500 mb-4">Error Loading Token</h2>
-            <p className="text-muted-foreground mb-4">
-              {tokenInfoError?.message || 'Failed to load token data'}
-            </p>
-            <div className="space-x-3">
-              <Button onClick={() => window.location.reload()} variant="outline">
-                Retry
-              </Button>
-              <Button onClick={() => navigate('/board')}>
-                Back to Board
-              </Button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // If only price error (curve not initialized), continue to show the page
-    // The TradingInterface will handle the curve initialization
-
-    // Show "not found" state if loading is complete but no token info
-    if (!tokenInfoLoading && !priceLoading && !tokenInfo) {
-      return (
-        <div className="min-h-screen bg-somnia-bg text-foreground relative flex items-center justify-center">
-          <AnimatedBackground />
-          <div className="relative z-10 text-center">
-            <h2 className="text-xl font-bold mb-4">Token Not Found</h2>
-            <p className="text-muted-foreground mb-4">
-              This token might not exist or hasn't been deployed yet.
-            </p>
+  if (tokenInfoError) {
+    return (
+      <div className="min-h-screen bg-somnia-bg text-foreground relative flex items-center justify-center">
+        <AnimatedBackground />
+        <div className="relative z-10 text-center">
+          <h2 className="text-xl font-bold text-red-500 mb-4">Error Loading Token</h2>
+          <p className="text-muted-foreground mb-4">
+            {tokenInfoError?.message || 'Failed to load token data'}
+          </p>
+          <div className="space-x-3">
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Retry
+            </Button>
             <Button onClick={() => navigate('/board')}>
               Back to Board
             </Button>
           </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
+
+  if (!tokenInfoLoading && !priceLoading && !tokenInfo) {
+    return (
+      <div className="min-h-screen bg-somnia-bg text-foreground relative flex items-center justify-center">
+        <AnimatedBackground />
+        <div className="relative z-10 text-center">
+          <h2 className="text-xl font-bold mb-4">Token Not Found</h2>
+          <p className="text-muted-foreground mb-4">
+            This token might not exist or hasn't been deployed yet.
+          </p>
+          <Button onClick={() => navigate('/board')}>
+            Back to Board
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const handleBack = () => {
@@ -158,7 +133,7 @@ const TokenDetail = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="bg-somnia-card border-somnia-border p-4">
             <p className="text-sm text-muted-foreground">Price</p>
-            <p className="text-xl font-bold text-foreground">{parseFloat(displayPrice).toFixed(8)} STT</p>
+            <p className="text-xl font-bold text-foreground">{parseFloat(displayPrice).toFixed(8)} SOMI</p>
             <p className="text-sm text-muted-foreground">per token</p>
           </Card>
           
@@ -169,9 +144,9 @@ const TokenDetail = () => {
           </Card>
           
           <Card className="bg-somnia-card border-somnia-border p-4">
-            <p className="text-sm text-muted-foreground">STT Raised</p>
-            <p className="text-xl font-bold text-foreground">{parseFloat(displayTokenInfo.sttRaised).toFixed(2)} STT</p>
-            <p className="text-sm text-muted-foreground">{displayTokenInfo.graduatedToDeX ? "Graduated" : "/ 1000 STT"}</p>
+            <p className="text-sm text-muted-foreground">SOMI Raised</p>
+            <p className="text-xl font-bold text-foreground">{parseFloat(displayTokenInfo.sttRaised).toFixed(2)} SOMI</p>
+            <p className="text-sm text-muted-foreground">{displayTokenInfo.graduatedToDeX ? "Graduated" : "/ 10,000 SOMI"}</p>
           </Card>
           
           <Card className="bg-somnia-card border-somnia-border p-4">
@@ -244,8 +219,8 @@ const TokenDetail = () => {
                         <p className="text-lg font-semibold text-foreground">{parseFloat(displayTokenInfo.tokensSold).toLocaleString()}</p>
                       </div>
                       <div className="bg-somnia-hover rounded-lg p-4">
-                        <p className="text-sm text-muted-foreground">STT Raised</p>
-                        <p className="text-lg font-semibold text-foreground">{parseFloat(displayTokenInfo.sttRaised).toFixed(4)} STT</p>
+                        <p className="text-sm text-muted-foreground">SOMI Raised</p>
+                        <p className="text-lg font-semibold text-foreground">{parseFloat(displayTokenInfo.sttRaised).toFixed(4)} SOMI</p>
                       </div>
                       <div className="bg-somnia-hover rounded-lg p-4">
                         <p className="text-sm text-muted-foreground">Status</p>

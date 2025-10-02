@@ -14,12 +14,12 @@ export const SOMNIA_MAINNET_CONFIG = {
 export const SOMNIA_TESTNET_CONFIG = {
   chainId: SOMNIA_TESTNET_CHAIN_ID,
   name: 'Somnia Testnet',
-  currency: 'STT',
+  currency: 'SOMI',
   explorerUrl: 'https://shannon-explorer.somnia.network/',
   rpcUrl: 'https://dream-rpc.somnia.network/'
 };
 
-const isTestnet = true;
+const isTestnet = false;
 
 export const CONTRACT_ADDRESSES = getContractAddresses(isTestnet);
 
@@ -71,7 +71,7 @@ export const REGISTRY_ABI = [
   },
   {
     "inputs": [],
-    "name": "getWSTT",
+    "name": "getWSOMI",
     "outputs": [{"internalType": "address", "name": "", "type": "address"}],
     "stateMutability": "view",
     "type": "function"
@@ -225,7 +225,7 @@ export const BONDING_CURVE_ABI = [
       {"internalType": "address", "name": "token", "type": "address"},
       {"internalType": "uint256", "name": "tokenAmount", "type": "uint256"}
     ],
-    "name": "calculateSttOut",
+    "name": "calculateSomiOut",
     "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
     "stateMutability": "view",
     "type": "function"
@@ -235,7 +235,7 @@ export const BONDING_CURVE_ABI = [
     "inputs": [
       {"indexed": true, "internalType": "address", "name": "token", "type": "address"},
       {"indexed": true, "internalType": "address", "name": "buyer", "type": "address"},
-      {"indexed": false, "internalType": "uint256", "name": "sttIn", "type": "uint256"},
+      {"indexed": false, "internalType": "uint256", "name": "somiIn", "type": "uint256"},
       {"indexed": false, "internalType": "uint256", "name": "tokensOut", "type": "uint256"},
       {"indexed": false, "internalType": "uint256", "name": "newPrice", "type": "uint256"}
     ],
@@ -248,7 +248,7 @@ export const BONDING_CURVE_ABI = [
       {"indexed": true, "internalType": "address", "name": "token", "type": "address"},
       {"indexed": true, "internalType": "address", "name": "seller", "type": "address"},
       {"indexed": false, "internalType": "uint256", "name": "tokensIn", "type": "uint256"},
-      {"indexed": false, "internalType": "uint256", "name": "sttOut", "type": "uint256"},
+      {"indexed": false, "internalType": "uint256", "name": "somiOut", "type": "uint256"},
       {"indexed": false, "internalType": "uint256", "name": "newPrice", "type": "uint256"}
     ],
     "name": "TokenSold",
@@ -342,7 +342,7 @@ export const FEE_MANAGER_ABI = [
   }
 ];
 
-export const WSTT_ABI = [
+export const WSOMI_ABI = [
   {
     "inputs": [],
     "name": "deposit",

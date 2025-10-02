@@ -24,8 +24,10 @@ contract TokenFactory is Ownable, ReentrancyGuard {
     address[] public allTokens;
     mapping(address => address[]) public creatorTokens;
     
-    uint256 public constant CREATION_FEE = 0.001 ether;
+    uint256 public constant CREATION_FEE = 10 * 10**18;
     uint256 public constant INITIAL_SUPPLY = 1_000_000_000 * 10**18;
+
+    address public treasuryAddress;
     
     event TokenCreated(
         address indexed tokenAddress,
@@ -38,14 +40,16 @@ contract TokenFactory is Ownable, ReentrancyGuard {
     event MetadataUpdated(address indexed tokenAddress, string imageUri, string description);
     event TokenBurned(address indexed tokenAddress, uint256 amount);
     event TokenMinted(address indexed tokenAddress, uint256 amount);
+    event CreationFeeSent(address indexed creator, uint256 amount);
     
     modifier onlyTokenCreator(address tokenAddress) {
         require(tokenMetadata[tokenAddress].creator == msg.sender, "Not token creator");
         _;
     }
     
-    constructor(address _registry) Ownable(msg.sender) {
+    constructor(address _registry, address _treasury) Ownable(msg.sender) {
         registry = IRegistry(_registry);
+        treasuryAddress = _treasury;
     }
     
     function createToken(
@@ -86,17 +90,21 @@ contract TokenFactory is Ownable, ReentrancyGuard {
         
         allTokens.push(tokenAddress);
         creatorTokens[msg.sender].push(tokenAddress);
-        
+
         registry.registerToken(tokenAddress);
-        
-        address feeManager = registry.getFeeManager();
-        if (feeManager != address(0) && msg.value > 0) {
-            (bool success, ) = feeManager.call{value: msg.value}("");
-            require(success, "Fee transfer failed");
+
+        (bool success, ) = bondingCurve.call(
+            abi.encodeWithSignature("initializeCurve(address)", tokenAddress)
+        );
+        require(success, "Curve initialization failed");
+
+        if (treasuryAddress != address(0) && msg.value >= CREATION_FEE) {
+            payable(treasuryAddress).transfer(CREATION_FEE);
+            emit CreationFeeSent(msg.sender, CREATION_FEE);
         }
-        
+
         emit TokenCreated(tokenAddress, msg.sender, name, symbol, supply);
-        
+
         return tokenAddress;
     }
     
@@ -150,5 +158,10 @@ contract TokenFactory is Ownable, ReentrancyGuard {
     
     function getTokenMetadata(address tokenAddress) external view returns (TokenMetadata memory) {
         return tokenMetadata[tokenAddress];
+    }
+
+    function setTreasuryAddress(address _treasury) external onlyOwner {
+        require(_treasury != address(0), "Invalid treasury address");
+        treasuryAddress = _treasury;
     }
 }

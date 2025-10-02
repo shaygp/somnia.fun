@@ -6,7 +6,7 @@ import { Wallet, ExternalLink, Copy, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAccount, useConnect, useDisconnect, useBalance, useSwitchChain } from 'wagmi';
 import { injected, metaMask } from 'wagmi/connectors';
-import { somniaTestnetChain } from '../config/wagmi';
+import { somniaMainnetChain } from '../config/wagmi';
 
 interface WalletConnectionProps {}
 
@@ -44,7 +44,7 @@ const WalletConnection = ({}: WalletConnectionProps) => {
     try {
       connect({
         connector,
-        chainId: somniaTestnetChain.id
+        chainId: somniaMainnetChain.id
       });
       setShowModal(false);
 
@@ -63,15 +63,15 @@ const WalletConnection = ({}: WalletConnectionProps) => {
 
   const handleNetworkSwitch = async () => {
     try {
-      await switchChain({ chainId: somniaTestnetChain.id });
+      await switchChain({ chainId: somniaMainnetChain.id });
       toast({
         title: "Network Switched",
-        description: "Successfully switched to Somnia Testnet",
+        description: "Successfully switched to Somnia Mainnet",
       });
     } catch (error) {
       toast({
         title: "Network Switch Failed",
-        description: "Please manually switch to Somnia Testnet in your wallet",
+        description: "Please manually switch to Somnia Mainnet in your wallet",
         variant: "destructive",
       });
     }
@@ -100,13 +100,13 @@ const WalletConnection = ({}: WalletConnectionProps) => {
   };
 
   if (isConnected && address) {
-    const isWrongNetwork = chain?.id !== somniaTestnetChain.id;
+    const isWrongNetwork = chain?.id !== somniaMainnetChain.id;
 
     return (
       <div className="flex items-center space-x-3">
         <div className="hidden sm:block text-right">
           <p className="text-sm font-medium text-foreground">
-            {balance ? `${parseFloat(balance.formatted).toFixed(4)} ${balance.symbol}` : '0.0000 STT'}
+            {balance ? `${parseFloat(balance.formatted).toFixed(4)} ${balance.symbol}` : '0.0000 SOMI'}
           </p>
           <p className="text-xs text-muted-foreground">{formatAddress(address)}</p>
           {isWrongNetwork && (

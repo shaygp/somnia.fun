@@ -18,7 +18,7 @@ export const logTransaction = (
   
   if (hash) {
     console.log('Valid hash:', hash.startsWith('0x') && hash.length >= 66);
-    console.log('Explorer link:', `https://shannon-explorer.somnia.network/tx/${hash}`);
+    console.log('Explorer link:', `https://explorer.somnia.network/tx/${hash}`);
   }
   
   console.groupEnd();

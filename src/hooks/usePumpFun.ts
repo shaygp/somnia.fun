@@ -31,7 +31,7 @@ export const usePumpFun = () => {
         abi: TOKEN_FACTORY_ABI,
         functionName: 'createToken',
         args: [name, symbol, parseEther('1000000000'), imageUri, description],
-        value: parseEther('0.1'),
+        value: parseEther('10'),
       });
 
       console.log('Token creation transaction hash:', hash, 'type:', typeof hash);
@@ -144,55 +144,41 @@ export const usePumpFun = () => {
 };
 
 export const useTokenPrice = (tokenAddress: string) => {
-  const isDemoToken = tokenAddress === '0x1234567890123456789012345678901234567890';
-  
-  // First get curve info to check if curve exists
   const { data: curveInfo, isLoading: curveLoading, error: curveError } = useReadContract({
     address: CONTRACT_ADDRESSES.BONDING_CURVE as `0x${string}`,
     abi: BONDING_CURVE_ABI,
     functionName: 'getCurveInfo',
     args: [tokenAddress],
     query: {
-      enabled: !!CONTRACT_ADDRESSES.BONDING_CURVE && !!tokenAddress && !isDemoToken,
+      enabled: !!CONTRACT_ADDRESSES.BONDING_CURVE && !!tokenAddress,
     },
   });
 
-  // Use getPrice with amount 1 ETH to get price per token - only if curve exists
   const { data: price, isLoading: priceLoading, error: priceError } = useReadContract({
     address: CONTRACT_ADDRESSES.BONDING_CURVE as `0x${string}`,
     abi: BONDING_CURVE_ABI,
     functionName: 'getPrice',
     args: [tokenAddress, parseEther('1')],
     query: {
-      enabled: !!CONTRACT_ADDRESSES.BONDING_CURVE && 
-               !!tokenAddress && 
-               !isDemoToken && 
-               !!curveInfo, // Only call if we have curve info
+      enabled: !!CONTRACT_ADDRESSES.BONDING_CURVE &&
+               !!tokenAddress &&
+               !!curveInfo,
     },
   });
 
   console.log('useTokenPrice - tokenAddress:', tokenAddress);
   console.log('useTokenPrice - curveInfo:', curveInfo);
   console.log('useTokenPrice - curveError:', curveError);
-  console.log('useTokenPrice - price for 1 STT:', price);
+  console.log('useTokenPrice - price for 1 SOMI:', price);
   console.log('useTokenPrice - priceError:', priceError);
-
-  // For demo token, return fake price
-  if (isDemoToken) {
-    return {
-      price: '0.000005',
-      isLoading: false,
-      error: null,
-    };
-  }
 
   // Calculate price from curve data if available
   if (curveInfo) {
     const curve = curveInfo as any;
     console.log('Curve details for', tokenAddress, ':', {
       soldSupply: curve.soldSupply?.toString(),
-      sttCollected: curve.sttCollected?.toString(), 
-      virtualSttReserves: curve.virtualSttReserves?.toString(),
+      somiCollected: curve.somiCollected?.toString(),
+      virtualSomiReserves: curve.virtualSomiReserves?.toString(),
       virtualTokenReserves: curve.virtualTokenReserves?.toString(),
       active: curve.active,
       graduated: curve.graduated
@@ -217,18 +203,18 @@ export const useTokenPrice = (tokenAddress: string) => {
     }
 
     // Calculate price from curve reserves (fallback method)
-    if (curve.virtualSttReserves && curve.virtualTokenReserves) {
+    if (curve.virtualSomiReserves && curve.virtualTokenReserves) {
       try {
-        const virtualStt = BigInt(curve.virtualSttReserves.toString());
+        const virtualSomi = BigInt(curve.virtualSomiReserves.toString());
         const virtualTokens = BigInt(curve.virtualTokenReserves.toString());
         const soldSupply = BigInt(curve.soldSupply?.toString() || '0');
-        
+
         // Calculate available tokens: virtualTokens - soldSupply
         const availableTokens = virtualTokens - soldSupply;
-        
+
         if (availableTokens > 0n) {
-          // Price per token: virtualSTT / availableTokens
-          const pricePerToken = (virtualStt * parseEther('1')) / availableTokens;
+          // Price per token: virtualSOMI / availableTokens
+          const pricePerToken = (virtualSomi * parseEther('1')) / availableTokens;
           return {
             price: formatEther(pricePerToken),
             isLoading: false,
@@ -266,15 +252,13 @@ export const useTokenPrice = (tokenAddress: string) => {
 };
 
 export const useTokenInfo = (tokenAddress: string) => {
-  const isDemoToken = tokenAddress === '0x1234567890123456789012345678901234567890';
-  
   const { data: tokenInfo, isLoading: tokenLoading, error: tokenError, refetch: refetchTokenInfo } = useReadContract({
     address: CONTRACT_ADDRESSES.TOKEN_FACTORY as `0x${string}`,
     abi: TOKEN_FACTORY_ABI,
     functionName: 'getTokenMetadata',
     args: [tokenAddress],
     query: {
-      enabled: !!CONTRACT_ADDRESSES.TOKEN_FACTORY && !!tokenAddress && !isDemoToken,
+      enabled: !!CONTRACT_ADDRESSES.TOKEN_FACTORY && !!tokenAddress,
       retry: 3,
     },
   });
@@ -285,7 +269,7 @@ export const useTokenInfo = (tokenAddress: string) => {
     functionName: 'getCurveInfo',
     args: [tokenAddress],
     query: {
-      enabled: !!CONTRACT_ADDRESSES.BONDING_CURVE && !!tokenAddress && !isDemoToken,
+      enabled: !!CONTRACT_ADDRESSES.BONDING_CURVE && !!tokenAddress,
       retry: 3,
     },
   });
@@ -296,7 +280,7 @@ export const useTokenInfo = (tokenAddress: string) => {
     functionName: 'isGraduated',
     args: [tokenAddress],
     query: {
-      enabled: !!CONTRACT_ADDRESSES.MARKET_GRADUATION && !!tokenAddress && !isDemoToken,
+      enabled: !!CONTRACT_ADDRESSES.MARKET_GRADUATION && !!tokenAddress,
       retry: 3,
     },
   });
@@ -308,16 +292,6 @@ export const useTokenInfo = (tokenAddress: string) => {
   console.log('useTokenInfo - curveError:', curveError);
   console.log('useTokenInfo - graduationError:', graduationError);
 
-  // For demo token, return null (let component handle demo data)
-  if (isDemoToken) {
-    return {
-      tokenInfo: null,
-      isLoading: false,
-      error: null,
-    };
-  }
-
-  // If we have token metadata, return it even if curve info is missing
   const hasTokenInfo = tokenInfo && (tokenInfo as any).name;
   
   if (hasTokenInfo) {
@@ -331,7 +305,7 @@ export const useTokenInfo = (tokenAddress: string) => {
         createdAt: (tokenInfo as any).createdAt || (tokenInfo as any)[5],
         totalSupply: (tokenInfo as any).totalSupply ? formatEther((tokenInfo as any).totalSupply) : formatEther((tokenInfo as any)[6] || 0),
         active: (tokenInfo as any).active ?? (tokenInfo as any)[7] ?? true,
-        sttRaised: curveInfo ? formatEther((curveInfo as any).sttCollected || 0) : '0',
+        sttRaised: curveInfo ? formatEther((curveInfo as any).somiCollected || 0) : '0',
         tokensSold: curveInfo ? formatEther((curveInfo as any).soldSupply || 0) : '0',
         graduatedToDeX: !!isGraduated,
       },
@@ -427,7 +401,7 @@ export const useTokenQuotes = (tokenAddress: string) => {
     return useReadContract({
       address: CONTRACT_ADDRESSES.BONDING_CURVE as `0x${string}`,
       abi: BONDING_CURVE_ABI,
-      functionName: 'calculateSttOut',
+      functionName: 'calculateSomiOut',
       args: [tokenAddress, parseEther(tokenAmount)],
       query: {
         enabled: !!CONTRACT_ADDRESSES.BONDING_CURVE && !!tokenAddress && !!tokenAmount,

@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/IRegistry.sol";
 import "./MemeToken.sol";
-import "./WSTT.sol";
 
 interface ISomnexFactory {
     function createPair(address tokenA, address tokenB) external returns (address pair);
@@ -66,7 +65,7 @@ contract SomnexIntegration is Ownable, ReentrancyGuard {
         bool graduated;
         bool publicTradingEnabled;
         uint256 graduatedAt;
-        uint256 sttLocked;
+        uint256 somiLocked;
         uint256 tokensLocked;
         address pairAddress;
         uint256 liquidityTokens;
@@ -78,23 +77,25 @@ contract SomnexIntegration is Ownable, ReentrancyGuard {
 
     mapping(address => SomnexGraduationInfo) public graduationInfo;
 
-    uint256 public constant GRADUATION_THRESHOLD = 1000 * 10**18;
-    uint256 public constant LOCKED_LIQUIDITY_STT = 36 * 10**18;
+    uint256 public constant GRADUATION_THRESHOLD = 10000 * 10**18;
+    uint256 public constant LOCKED_LIQUIDITY_SOMI = 15000 * 10**18;
     uint256 public constant LOCKED_LIQUIDITY_TOKENS = 200_000_000 * 10**18;
     uint256 public constant PERMANENT_LOCK_DURATION = 365 days * 100;
 
-    address public somnexFactoryMainnet = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
-    address public somnexRouterMainnet = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address public somnexFactoryMainnet = 0x46C6FBD364325aE500d1A5a3A7A32B34ec5c5e73;
+    address public somnexRouterMainnet = 0x28783c7Af9bCF35cA9b5417077daBcB274D64537;
 
-    address public somnexFactoryTestnet = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
-    address public somnexRouterTestnet = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address public somnexFactoryTestnet = 0x46C6FBD364325aE500d1A5a3A7A32B34ec5c5e73;
+    address public somnexRouterTestnet = 0x28783c7Af9bCF35cA9b5417077daBcB274D64537;
+
+    address public constant WSOMI = 0x046EDe9564A72571df6F5e44d0405360c0f4dCab;
 
     bool public isTestnet;
 
     event TokenGraduatedToSomnex(
         address indexed token,
         address indexed pair,
-        uint256 sttLocked,
+        uint256 somiLocked,
         uint256 tokensLocked,
         uint256 liquidityTokens
     );
@@ -180,7 +181,7 @@ contract SomnexIntegration is Ownable, ReentrancyGuard {
         return (collected >= GRADUATION_THRESHOLD, collected);
     }
 
-    function graduateTokenToSomnex(address token) external onlyAuthorized {
+    function graduateTokenToSomnex(address token) external payable onlyAuthorized {
         require(registry.isValidToken(token), "Invalid token");
         require(!graduationInfo[token].graduated, "Already graduated");
 
@@ -198,41 +199,31 @@ contract SomnexIntegration is Ownable, ReentrancyGuard {
         require(graduationInfo[token].graduated, "Not graduated");
         require(graduationInfo[token].pairAddress == address(0), "Already listed");
 
-        uint256 sttAmount = msg.value > 0 ? msg.value : LOCKED_LIQUIDITY_STT;
+        uint256 somiAmount = address(this).balance;
         uint256 tokenAmount = LOCKED_LIQUIDITY_TOKENS;
 
-        require(sttAmount >= LOCKED_LIQUIDITY_STT, "Insufficient STT");
-
-        address wsttAddress = registry.getWSTT();
-        require(wsttAddress != address(0), "WSTT not set");
-
-        WSTT wstt = WSTT(payable(wsttAddress));
-        wstt.deposit{value: sttAmount}();
-
+        require(somiAmount >= LOCKED_LIQUIDITY_SOMI, "Insufficient SOMI");
         require(IERC20(token).balanceOf(address(this)) >= tokenAmount, "Insufficient tokens");
 
-        pairAddress = somnexFactory.getPair(token, wsttAddress);
+        pairAddress = somnexFactory.getPair(token, WSOMI);
         if (pairAddress == address(0)) {
-            pairAddress = somnexFactory.createPair(token, wsttAddress);
+            pairAddress = somnexFactory.createPair(token, WSOMI);
         }
 
         IERC20(token).approve(address(somnexRouter), tokenAmount);
-        IERC20(wsttAddress).approve(address(somnexRouter), sttAmount);
 
-        (uint amountToken, uint amountWSTT, uint liquidity) = somnexRouter.addLiquidity(
+        (uint amountToken, uint amountSOMI, uint liquidity) = somnexRouter.addLiquidityETH{value: somiAmount}(
             token,
-            wsttAddress,
             tokenAmount,
-            sttAmount,
             tokenAmount * 95 / 100,
-            sttAmount * 95 / 100,
+            somiAmount * 95 / 100,
             address(this),
             block.timestamp + 300
         );
 
         graduationInfo[token].pairAddress = pairAddress;
         graduationInfo[token].liquidityTokens = liquidity;
-        graduationInfo[token].sttLocked = amountWSTT;
+        graduationInfo[token].somiLocked = amountSOMI;
         graduationInfo[token].tokensLocked = amountToken;
 
         emit LiquidityLockedOnSomnex(token, liquidity);
@@ -254,7 +245,7 @@ contract SomnexIntegration is Ownable, ReentrancyGuard {
         emit PublicTradingEnabledOnSomnex(token);
     }
 
-    function getTokenPrice(address token) external view returns (uint256 priceInSTT) {
+    function getTokenPrice(address token) external view returns (uint256 priceInSOMI) {
         address pairAddress = graduationInfo[token].pairAddress;
         if (pairAddress == address(0)) {
             return 0;
@@ -266,12 +257,12 @@ contract SomnexIntegration is Ownable, ReentrancyGuard {
         address token0 = pair.token0();
 
         if (token0 == token) {
-            priceInSTT = (uint256(reserve1) * 10**18) / uint256(reserve0);
+            priceInSOMI = (uint256(reserve1) * 10**18) / uint256(reserve0);
         } else {
-            priceInSTT = (uint256(reserve0) * 10**18) / uint256(reserve1);
+            priceInSOMI = (uint256(reserve0) * 10**18) / uint256(reserve1);
         }
 
-        return priceInSTT;
+        return priceInSOMI;
     }
 
     function getQuote(
@@ -314,16 +305,15 @@ contract SomnexIntegration is Ownable, ReentrancyGuard {
         return amounts;
     }
 
-    function swapETHForTokens(
+    function swapSOMIForTokens(
         address tokenOut,
         uint256 amountOutMin,
         address recipient
     ) external payable nonReentrant returns (uint256[] memory amounts) {
-        require(msg.value > 0, "Invalid ETH amount");
+        require(msg.value > 0, "Invalid SOMI amount");
 
-        address wsttAddress = registry.getWSTT();
         address[] memory path = new address[](2);
-        path[0] = wsttAddress;
+        path[0] = WSOMI;
         path[1] = tokenOut;
 
         amounts = somnexRouter.swapExactETHForTokens{value: msg.value}(
@@ -336,7 +326,7 @@ contract SomnexIntegration is Ownable, ReentrancyGuard {
         return amounts;
     }
 
-    function swapTokensForETH(
+    function swapTokensForSOMI(
         address tokenIn,
         uint256 amountIn,
         uint256 amountOutMin,
@@ -347,10 +337,9 @@ contract SomnexIntegration is Ownable, ReentrancyGuard {
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
         IERC20(tokenIn).approve(address(somnexRouter), amountIn);
 
-        address wsttAddress = registry.getWSTT();
         address[] memory path = new address[](2);
         path[0] = tokenIn;
-        path[1] = wsttAddress;
+        path[1] = WSOMI;
 
         amounts = somnexRouter.swapExactTokensForETH(
             amountIn,

@@ -3,17 +3,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Lock, Droplets } from "lucide-react";
 
-const mockData = [
-  { supply: 0, price: 0.0001, liquidity: 0 },
-  { supply: 100000, price: 0.0005, liquidity: 10 },
-  { supply: 250000, price: 0.0012, liquidity: 25 },
-  { supply: 500000, price: 0.0028, liquidity: 45 },
-  { supply: 750000, price: 0.0055, liquidity: 68 },
-  { supply: 1000000, price: 0.01, liquidity: 80 }, // DEX threshold
-  { supply: 1250000, price: 0.015, liquidity: 80 },
-  { supply: 1500000, price: 0.022, liquidity: 80 },
-];
-
 interface BondingCurveChartProps {
   tokenSymbol: string;
   currentSupply: number;
@@ -22,15 +11,37 @@ interface BondingCurveChartProps {
   className?: string;
 }
 
-const BondingCurveChart = ({ 
-  tokenSymbol, 
-  currentSupply, 
-  currentPrice, 
+const BondingCurveChart = ({
+  tokenSymbol,
+  currentSupply,
+  currentPrice,
   liquidityPooled,
-  className 
+  className
 }: BondingCurveChartProps) => {
-  const progress = (liquidityPooled / 1000) * 100;
-  const isDexReady = liquidityPooled >= 1000;
+  const progress = (liquidityPooled / 10000) * 100;
+  const isDexReady = liquidityPooled >= 10000;
+
+  const generateCurveData = () => {
+    const dataPoints = [];
+    const maxSupply = Math.max(currentSupply, 1000000);
+    const step = maxSupply / 7;
+
+    for (let i = 0; i <= 7; i++) {
+      const supply = i * step;
+      const priceAtSupply = supply === 0 ? 0.0001 : (0.0001 + (supply / 1000000) * 0.02);
+      const liquidityAtSupply = supply === 0 ? 0 : Math.min((supply / 1000000) * 10000, 10000);
+
+      dataPoints.push({
+        supply: Math.round(supply),
+        price: parseFloat(priceAtSupply.toFixed(8)),
+        liquidity: parseFloat(liquidityAtSupply.toFixed(2))
+      });
+    }
+
+    return dataPoints;
+  };
+
+  const chartData = generateCurveData();
 
   return (
     <Card className={`bg-somnia-card border-somnia-border p-6 ${className}`}>
@@ -49,10 +60,9 @@ const BondingCurveChart = ({
           </Badge>
         </div>
 
-        {/* Chart */}
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={mockData}>
+            <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--somnia-lime))" stopOpacity={0.3}/>
@@ -73,7 +83,7 @@ const BondingCurveChart = ({
               <YAxis 
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
-                tickFormatter={(value) => `${value} STT`}
+                tickFormatter={(value) => `${value} SOMI`}
               />
               <Area 
                 type="monotone" 
@@ -101,7 +111,7 @@ const BondingCurveChart = ({
               <TrendingUp className="w-4 h-4 text-primary mr-1" />
               <span className="text-xs text-muted-foreground">Current Price</span>
             </div>
-            <p className="font-semibold text-foreground">{currentPrice.toFixed(6)} STT</p>
+            <p className="font-semibold text-foreground">{currentPrice.toFixed(6)} SOMI</p>
           </div>
           
           <div className="text-center">
@@ -109,7 +119,7 @@ const BondingCurveChart = ({
               <Droplets className="w-4 h-4 text-accent mr-1" />
               <span className="text-xs text-muted-foreground">Liquidity Pool</span>
             </div>
-            <p className="font-semibold text-foreground">{liquidityPooled.toFixed(2)} STT</p>
+            <p className="font-semibold text-foreground">{liquidityPooled.toFixed(2)} SOMI</p>
           </div>
           
           <div className="text-center">
@@ -118,7 +128,7 @@ const BondingCurveChart = ({
               <span className="text-xs text-muted-foreground">Locked</span>
             </div>
             <p className="font-semibold text-muted-foreground">
-              {isDexReady ? "36 STT" : "0 STT"}
+              {isDexReady ? "15,000 SOMI" : "0 SOMI"}
             </p>
           </div>
         </div>
@@ -137,8 +147,8 @@ const BondingCurveChart = ({
           </div>
           <p className="text-xs text-muted-foreground">
             {isDexReady 
-              ? "✅ Ready for DEX listing. 36 STT will be permanently locked."
-              : `${(1000 - liquidityPooled).toFixed(1)} STT needed to unlock DEX listing`
+              ? "✅ Ready for DEX listing. 15,000 SOMI will be permanently locked."
+              : `${(10000 - liquidityPooled).toFixed(1)} SOMI needed to unlock DEX listing`
             }
           </p>
         </div>

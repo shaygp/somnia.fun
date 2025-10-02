@@ -16,11 +16,50 @@ import { CONTRACT_ADDRESSES, UNISWAP_V2_ROUTER_ABI, MEME_TOKEN_ABI } from "@/con
 import { useWriteContract } from "wagmi";
 import { parseEther } from "viem";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { Link } from "react-router-dom";
+
+const GraduatedTokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
+  const { tokenInfo } = useTokenInfo(tokenAddress);
+
+  if (!tokenInfo || !tokenInfo.graduatedToDeX) return null;
+
+  return (
+    <div className="p-4 bg-somnia-bg rounded-lg hover:bg-somnia-hover transition-colors">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <img
+            src={tokenInfo.imageUri || "https://via.placeholder.com/40"}
+            alt={tokenInfo.name}
+            className="w-10 h-10 rounded-full"
+          />
+          <div>
+            <div className="font-medium">{tokenInfo.name}</div>
+            <div className="text-sm text-muted-foreground">${tokenInfo.symbol}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="bg-green-500/20 text-green-500 border-green-500/50">
+            Graduated
+          </Badge>
+          <Button size="sm" variant="ghost" className="hover:bg-somnia-hover" asChild>
+            <Link to={`/token/${tokenAddress}`}>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+      <div className="mt-3 flex justify-between text-sm">
+        <span className="text-muted-foreground">Liquidity: {parseFloat(tokenInfo.sttRaised).toFixed(2)} SOMI</span>
+        <span className="text-muted-foreground">Tokens Sold: {parseFloat(tokenInfo.tokensSold).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+      </div>
+    </div>
+  );
+};
 
 const Somnex = () => {
   const { address, isConnected } = useAccount();
   const { toast } = useToast();
-  const [fromToken, setFromToken] = useState("STT");
+  const [fromToken, setFromToken] = useState("SOMI");
   const [toToken, setToToken] = useState("USDT");
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
@@ -29,16 +68,12 @@ const Somnex = () => {
   const [isAddingLiquidity, setIsAddingLiquidity] = useState(false);
   const [tokenAAmount, setTokenAAmount] = useState("");
   const [tokenBAmount, setTokenBAmount] = useState("");
-  const [selectedTokenA, setSelectedTokenA] = useState("STT");
-  const [selectedTokenB, setSelectedTokenB] = useState("WSTT");
+  const [selectedTokenA, setSelectedTokenA] = useState("SOMI");
+  const [selectedTokenB, setSelectedTokenB] = useState("WSOMI");
   const { executeSwap, getQuote } = useSomnexSwap();
   const { tokens } = useAllTokens();
   const { writeContractAsync } = useWriteContract();
 
-  const graduatedTokens = tokens?.filter(tokenAddress => {
-    const { tokenInfo } = useTokenInfo(tokenAddress);
-    return tokenInfo?.graduatedToDeX;
-  }) || [];
 
   const handleSwapTokens = () => {
     const temp = fromToken;
@@ -56,8 +91,8 @@ const Somnex = () => {
   }, [fromAmount, fromToken, toToken]);
 
   const TOKEN_ADDRESSES: { [key: string]: string } = {
-    STT: "0x0000000000000000000000000000000000000000",
-    WSTT: CONTRACT_ADDRESSES.WSTT,
+    SOMI: "0x0000000000000000000000000000000000000000",
+    WSOMI: CONTRACT_ADDRESSES.WSOMI,
     USDT: "0x0000000000000000000000000000000000000001",
   };
 
@@ -114,7 +149,7 @@ const Somnex = () => {
         description: "Processing liquidity transaction...",
       });
 
-      if (selectedTokenA !== "STT") {
+      if (selectedTokenA !== "SOMI") {
         await writeContractAsync({
           address: tokenAAddress as `0x${string}`,
           abi: MEME_TOKEN_ABI,
@@ -123,7 +158,7 @@ const Somnex = () => {
         });
       }
 
-      if (selectedTokenB !== "STT") {
+      if (selectedTokenB !== "SOMI") {
         await writeContractAsync({
           address: tokenBAddress as `0x${string}`,
           abi: MEME_TOKEN_ABI,
@@ -200,7 +235,7 @@ const Somnex = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Graduated Tokens</p>
-                    <p className="text-2xl font-bold text-primary">{graduatedTokens.length}</p>
+                    <p className="text-2xl font-bold text-primary">{tokens?.length || 0}</p>
                   </div>
                   <Rocket className="w-8 h-8 text-blue-500 opacity-50" />
                 </div>
@@ -209,7 +244,7 @@ const Somnex = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Active Pairs</p>
-                    <p className="text-2xl font-bold text-primary">256</p>
+                    <p className="text-2xl font-bold text-primary">{tokens?.length || 0}</p>
                   </div>
                   <Activity className="w-8 h-8 text-purple-500 opacity-50" />
                 </div>
@@ -242,8 +277,8 @@ const Somnex = () => {
                             onChange={(e) => setFromToken(e.target.value)}
                             className="px-4 py-2 bg-somnia-bg border border-somnia-border rounded-md text-primary"
                           >
-                            <option value="STT">STT</option>
-                            <option value="WSTT">WSTT</option>
+                            <option value="SOMI">SOMI</option>
+                            <option value="WSOMI">WSOMI</option>
                             <option value="USDT">USDT</option>
                             {graduatedTokens.map(token => (
                               <option key={token} value={token}>
@@ -281,8 +316,8 @@ const Somnex = () => {
                             className="px-4 py-2 bg-somnia-bg border border-somnia-border rounded-md text-primary"
                           >
                             <option value="USDT">USDT</option>
-                            <option value="STT">STT</option>
-                            <option value="WSTT">WSTT</option>
+                            <option value="SOMI">SOMI</option>
+                            <option value="WSOMI">WSOMI</option>
                             {graduatedTokens.map(token => (
                               <option key={token} value={token}>
                                 {token.slice(0, 6)}...
@@ -358,8 +393,8 @@ const Somnex = () => {
                             onChange={(e) => setSelectedTokenA(e.target.value)}
                             className="px-4 py-2 bg-somnia-bg border border-somnia-border rounded-md text-primary"
                           >
-                            <option value="STT">STT</option>
-                            <option value="WSTT">WSTT</option>
+                            <option value="SOMI">SOMI</option>
+                            <option value="WSOMI">WSOMI</option>
                             <option value="USDT">USDT</option>
                             {graduatedTokens.map(token => (
                               <option key={token} value={token}>
@@ -385,8 +420,8 @@ const Somnex = () => {
                             onChange={(e) => setSelectedTokenB(e.target.value)}
                             className="px-4 py-2 bg-somnia-bg border border-somnia-border rounded-md text-primary"
                           >
-                            <option value="WSTT">WSTT</option>
-                            <option value="STT">STT</option>
+                            <option value="WSOMI">WSOMI</option>
+                            <option value="SOMI">SOMI</option>
                             <option value="USDT">USDT</option>
                             {graduatedTokens.map(token => (
                               <option key={token} value={token}>
@@ -431,7 +466,7 @@ const Somnex = () => {
                           <div className="p-4 bg-somnia-bg rounded-lg">
                             <div className="flex justify-between items-center mb-2">
                               <div className="flex items-center gap-2">
-                                <div className="font-medium">STT / WSTT</div>
+                                <div className="font-medium">SOMI / WSOMI</div>
                                 <Badge variant="secondary" className="text-xs">0.3%</Badge>
                               </div>
                               <div className="text-sm text-green-500">24.5% APR</div>
@@ -454,7 +489,7 @@ const Somnex = () => {
                           <div className="p-4 bg-somnia-bg rounded-lg">
                             <div className="flex justify-between items-center mb-2">
                               <div className="flex items-center gap-2">
-                                <div className="font-medium">STT / USDT</div>
+                                <div className="font-medium">SOMI / USDT</div>
                                 <Badge variant="secondary" className="text-xs">0.3%</Badge>
                               </div>
                               <div className="text-sm text-green-500">18.2% APR</div>
@@ -482,7 +517,7 @@ const Somnex = () => {
                               <div key={tokenAddress} className="p-4 bg-somnia-bg rounded-lg">
                                 <div className="flex justify-between items-center mb-2">
                                   <div className="flex items-center gap-2">
-                                    <div className="font-medium">{tokenInfo.symbol} / STT</div>
+                                    <div className="font-medium">{tokenInfo.symbol} / SOMI</div>
                                     <Badge variant="secondary" className="text-xs">0.3%</Badge>
                                   </div>
                                   <div className="text-sm text-green-500">15.8% APR</div>
@@ -502,7 +537,7 @@ const Somnex = () => {
                                   className="w-full mt-3 bg-primary hover:bg-primary/90"
                                   onClick={() => {
                                     setSelectedTokenA(tokenInfo.symbol);
-                                    setSelectedTokenB("STT");
+                                    setSelectedTokenB("SOMI");
                                   }}
                                 >
                                   Add Liquidity
@@ -531,50 +566,19 @@ const Somnex = () => {
                   <h2 className="text-xl font-bold mb-4">Graduated Tokens</h2>
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
-                      {graduatedTokens.length > 0 ? (
-                        graduatedTokens.slice(0, 10).map(tokenAddress => {
-                          const { tokenInfo } = useTokenInfo(tokenAddress);
-                          if (!tokenInfo) return null;
-
-                          return (
-                            <div key={tokenAddress} className="p-4 bg-somnia-bg rounded-lg hover:bg-somnia-hover transition-colors">
-                              <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                  <img
-                                    src={tokenInfo.imageUri || "https://via.placeholder.com/40"}
-                                    alt={tokenInfo.name}
-                                    className="w-10 h-10 rounded-full"
-                                  />
-                                  <div>
-                                    <div className="font-medium">{tokenInfo.name}</div>
-                                    <div className="text-sm text-muted-foreground">${tokenInfo.symbol}</div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="secondary" className="bg-green-500/20 text-green-500 border-green-500/50">
-                                    Graduated
-                                  </Badge>
-                                  <Button size="sm" variant="ghost" className="hover:bg-somnia-hover">
-                                    <ArrowRight className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                              <div className="mt-3 flex justify-between text-sm">
-                                <span className="text-muted-foreground">Liquidity: {tokenInfo.sttRaised} STT</span>
-                                <span className="text-muted-foreground">Holders: 1,234</span>
-                              </div>
-                            </div>
-                          );
-                        })
+                      {tokens && tokens.length > 0 ? (
+                        tokens.slice(0, 10).map(tokenAddress => (
+                          <GraduatedTokenItem key={tokenAddress} tokenAddress={tokenAddress} />
+                        ))
                       ) : (
                         <div className="text-center py-8 text-muted-foreground">
                           <p>No graduated tokens yet</p>
-                          <p className="text-sm mt-2">Tokens graduate to Somnex DEX after raising 1000 STT</p>
+                          <p className="text-sm mt-2">Tokens graduate to Somnex DEX after raising 10,000 SOMI</p>
                         </div>
                       )}
                     </div>
 
-                    {graduatedTokens.length === 0 && (
+                    {(!tokens || tokens.length === 0) && (
                       <div className="mt-6 p-4 bg-primary/10 border border-primary/30 rounded-lg">
                         <h3 className="text-lg font-semibold mb-2 text-primary">How Graduation Works</h3>
                         <ul className="space-y-2 text-sm text-muted-foreground">
@@ -584,11 +588,11 @@ const Somnex = () => {
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-primary">2.</span>
-                            After raising 1000 STT, they graduate to Somnex DEX
+                            After raising 10,000 SOMI, they graduate to Somnex DEX
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-primary">3.</span>
-                            36 STT is locked permanently as liquidity
+                            15,000 SOMI is locked permanently as liquidity
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-primary">4.</span>

@@ -2,55 +2,162 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowUpRight, ArrowDownRight, Plus, ExternalLink } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
+import { useEffect, useState } from "react";
+import { usePublicClient } from "wagmi";
+import { CONTRACT_ADDRESSES, BONDING_CURVE_ABI, TOKEN_FACTORY_ABI } from "@/config/contracts";
+
+interface Activity {
+  type: "buy" | "sell" | "create";
+  user: string;
+  token: string;
+  amount: string;
+  value: string;
+  timestamp: string;
+  avatar: string;
+  txHash: string;
+}
 
 const ActivityFeed = () => {
-  const activities = [
-    {
-      type: "buy",
-      user: "0x1234...5678",
-      token: "PEPE",
-      amount: "1,250",
-      value: "0.15 STT",
-      timestamp: "2m ago",
-      avatar: "🐸"
-    },
-    {
-      type: "sell",
-      user: "0x9876...3210",
-      token: "LDOG",
-      amount: "500",
-      value: "0.08 STT",
-      timestamp: "3m ago",
-      avatar: "🐕"
-    },
-    {
-      type: "create",
-      user: "0x5555...7777",
-      token: "MOON",
-      amount: "1,000,000",
-      value: "0.5 STT",
-      timestamp: "5m ago",
-      avatar: "🌙"
-    },
-    {
-      type: "buy",
-      user: "0x1111...9999",
-      token: "XTKN",
-      amount: "2,000",
-      value: "0.24 STT",
-      timestamp: "7m ago",
-      avatar: "⚡"
-    },
-    {
-      type: "sell",
-      user: "0x3333...4444",
-      token: "DCAT",
-      amount: "800",
-      value: "0.12 STT",
-      timestamp: "9m ago",
-      avatar: "🐱"
-    }
-  ];
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const publicClient = usePublicClient();
+
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      if (!publicClient) return;
+
+      try {
+        const currentBlock = await publicClient.getBlockNumber();
+        const fromBlock = currentBlock - 1000n > 0n ? currentBlock - 1000n : 0n;
+
+        const [buyLogs, sellLogs, createLogs] = await Promise.all([
+          publicClient.getLogs({
+            address: CONTRACT_ADDRESSES.BONDING_CURVE as `0x${string}`,
+            event: {
+              type: 'event',
+              name: 'TokenBought',
+              inputs: [
+                { type: 'address', indexed: true, name: 'token' },
+                { type: 'address', indexed: true, name: 'buyer' },
+                { type: 'uint256', indexed: false, name: 'somiIn' },
+                { type: 'uint256', indexed: false, name: 'tokensOut' },
+                { type: 'uint256', indexed: false, name: 'newPrice' },
+              ],
+            },
+            fromBlock,
+            toBlock: currentBlock,
+          }),
+          publicClient.getLogs({
+            address: CONTRACT_ADDRESSES.BONDING_CURVE as `0x${string}`,
+            event: {
+              type: 'event',
+              name: 'TokenSold',
+              inputs: [
+                { type: 'address', indexed: true, name: 'token' },
+                { type: 'address', indexed: true, name: 'seller' },
+                { type: 'uint256', indexed: false, name: 'tokensIn' },
+                { type: 'uint256', indexed: false, name: 'somiOut' },
+                { type: 'uint256', indexed: false, name: 'newPrice' },
+              ],
+            },
+            fromBlock,
+            toBlock: currentBlock,
+          }),
+          publicClient.getLogs({
+            address: CONTRACT_ADDRESSES.TOKEN_FACTORY as `0x${string}`,
+            event: {
+              type: 'event',
+              name: 'TokenCreated',
+              inputs: [
+                { type: 'address', indexed: true, name: 'tokenAddress' },
+                { type: 'address', indexed: true, name: 'creator' },
+                { type: 'string', indexed: false, name: 'name' },
+                { type: 'string', indexed: false, name: 'symbol' },
+                { type: 'uint256', indexed: false, name: 'totalSupply' },
+              ],
+            },
+            fromBlock,
+            toBlock: currentBlock,
+          }),
+        ]);
+
+        const parsedActivities: Activity[] = [];
+
+        for (const log of buyLogs) {
+          const block = await publicClient.getBlock({ blockNumber: log.blockNumber });
+          parsedActivities.push({
+            type: "buy",
+            user: `${log.topics[2]?.slice(0, 6)}...${log.topics[2]?.slice(-4)}`,
+            token: `${log.topics[1]?.slice(0, 6)}...${log.topics[1]?.slice(-4)}`,
+            amount: "tokens",
+            value: "SOMI",
+            timestamp: formatTimestamp(Number(block.timestamp)),
+            avatar: "📈",
+            txHash: log.transactionHash || "",
+          });
+        }
+
+        for (const log of sellLogs) {
+          const block = await publicClient.getBlock({ blockNumber: log.blockNumber });
+          parsedActivities.push({
+            type: "sell",
+            user: `${log.topics[2]?.slice(0, 6)}...${log.topics[2]?.slice(-4)}`,
+            token: `${log.topics[1]?.slice(0, 6)}...${log.topics[1]?.slice(-4)}`,
+            amount: "tokens",
+            value: "SOMI",
+            timestamp: formatTimestamp(Number(block.timestamp)),
+            avatar: "📉",
+            txHash: log.transactionHash || "",
+          });
+        }
+
+        for (const log of createLogs) {
+          const block = await publicClient.getBlock({ blockNumber: log.blockNumber });
+          parsedActivities.push({
+            type: "create",
+            user: `${log.topics[2]?.slice(0, 6)}...${log.topics[2]?.slice(-4)}`,
+            token: `${log.topics[1]?.slice(0, 6)}...${log.topics[1]?.slice(-4)}`,
+            amount: "new token",
+            value: "10 SOMI",
+            timestamp: formatTimestamp(Number(block.timestamp)),
+            avatar: "🚀",
+            txHash: log.transactionHash || "",
+          });
+        }
+
+        parsedActivities.sort((a, b) => {
+          const timeA = parseTimestamp(a.timestamp);
+          const timeB = parseTimestamp(b.timestamp);
+          return timeB - timeA;
+        });
+
+        setActivities(parsedActivities.slice(0, 10));
+      } catch (error) {
+        console.error("Error fetching activity:", error);
+      }
+    };
+
+    fetchRecentActivity();
+    const interval = setInterval(fetchRecentActivity, 30000);
+    return () => clearInterval(interval);
+  }, [publicClient]);
+
+  const formatTimestamp = (timestamp: number) => {
+    const now = Math.floor(Date.now() / 1000);
+    const diff = now - timestamp;
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  };
+
+  const parseTimestamp = (timestamp: string): number => {
+    const match = timestamp.match(/(\d+)([smhd])/);
+    if (!match) return 0;
+    const value = parseInt(match[1]);
+    const unit = match[2];
+    const multipliers: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
+    return Date.now() / 1000 - value * multipliers[unit];
+  };
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -94,7 +201,11 @@ const ActivityFeed = () => {
 
         {/* Activity List */}
         <div className="space-y-3 max-h-96 overflow-y-auto">
-          {activities.map((activity, index) => (
+          {activities.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-muted-foreground">No recent activity</p>
+            </div>
+          ) : activities.map((activity, index) => (
             <div
               key={index}
               className={`border-l-2 pl-4 py-3 rounded-r-lg transition-all duration-200 hover:bg-somnia-hover/50 ${getActivityColor(activity.type)}`}
@@ -141,7 +252,6 @@ const ActivityFeed = () => {
               </div>
             </div>
           ))}
-        </div>
 
         {/* Footer */}
         <div className="pt-3 border-t border-somnia-border text-center">

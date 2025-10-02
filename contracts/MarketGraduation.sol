@@ -6,45 +6,52 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/IRegistry.sol";
-import "./interfaces/IQuickSwap.sol";
+import "./interfaces/ISomnex.sol";
 import "./MemeToken.sol";
-import "./WSTT.sol";
 
 contract MarketGraduation is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
-    
+
     struct GraduationInfo {
         bool graduated;
         bool publicTradingEnabled;
         uint256 graduatedAt;
-        uint256 sttLocked;
+        uint256 somiLocked;
         uint256 tokensLocked;
-        address poolAddress;
-        uint256 lpTokenId;
+        address pairAddress;
+        uint256 liquidityTokens;
     }
-    
+
     IRegistry public registry;
-    
+    ISomnexFactory public somnexFactory;
+    ISomnexRouter public somnexRouter;
+
     mapping(address => GraduationInfo) public graduationInfo;
-    
-    uint256 public constant GRADUATION_THRESHOLD = 1000 * 10**18;
-    uint256 public constant LOCKED_LIQUIDITY_STT = 36 * 10**18;
+
+    uint256 public constant GRADUATION_THRESHOLD = 10000 * 10**18;
+    uint256 public constant LOCKED_LIQUIDITY_SOMI = 15000 * 10**18;
     uint256 public constant LOCKED_LIQUIDITY_TOKENS = 200_000_000 * 10**18;
-    uint256 public constant MIN_LIQUIDITY_RATIO = 100;
-    
-    address public constant QUICKSWAP_FACTORY = 0xd2480162Aa7F02Ead7BF4C127465446150D58452;
-    address public constant QUICKSWAP_POSITION_MANAGER = 0xF6Ad3CcF71Abb3E12beCf6b3D2a74C963859ADCd;
-    uint24 public constant POOL_FEE = 3000;
+    uint256 public constant TREASURY_FEE_PERCENT = 350;
+    uint256 public constant GRADUATION_FEE = 200 * 10**18;
+    uint256 public constant FEE_DENOMINATOR = 10000;
+
+    address public constant SOMNEX_FACTORY = 0x46C6FBD364325aE500d1A5a3A7A32B34ec5c5e73;
+    address public constant SOMNEX_ROUTER = 0x28783c7Af9bCF35cA9b5417077daBcB274D64537;
+    address public constant WSOMI = 0x046EDe9564A72571df6F5e44d0405360c0f4dCab;
+
+    address public treasuryAddress;
     
     event TokenGraduated(
         address indexed token,
-        address indexed pool,
-        uint256 sttLocked,
+        address indexed pair,
+        uint256 somiLocked,
         uint256 tokensLocked
     );
-    
+
     event PublicTradingEnabled(address indexed token);
-    event LiquidityLocked(address indexed token, uint256 lpTokenId);
+    event LiquidityLocked(address indexed token, uint256 liquidityTokens);
+    event TreasuryFeeSent(address indexed token, uint256 amount);
+    event GraduationFeeSent(address indexed token, uint256 amount);
     
     modifier onlyAuthorized() {
         require(
@@ -55,8 +62,11 @@ contract MarketGraduation is Ownable, ReentrancyGuard {
         _;
     }
     
-    constructor(address _registry) Ownable(msg.sender) {
+    constructor(address _registry, address _treasury) Ownable(msg.sender) {
         registry = IRegistry(_registry);
+        somnexFactory = ISomnexFactory(SOMNEX_FACTORY);
+        somnexRouter = ISomnexRouter(SOMNEX_ROUTER);
+        treasuryAddress = _treasury;
     }
     
     function checkGraduation(address token) external view returns (bool canGraduate, uint256 sttCollected) {
@@ -83,84 +93,73 @@ contract MarketGraduation is Ownable, ReentrancyGuard {
         return (collected >= GRADUATION_THRESHOLD, collected);
     }
     
-    function graduateToken(address token) external onlyAuthorized {
+    function graduateToken(address token) external payable onlyAuthorized {
         require(registry.isValidToken(token), "Invalid token");
         require(!graduationInfo[token].graduated, "Already graduated");
-        
+
         (bool canGraduate, ) = this.checkGraduation(token);
         require(canGraduate, "Not ready for graduation");
-        
+
         graduationInfo[token].graduated = true;
         graduationInfo[token].graduatedAt = block.timestamp;
-        
-        emit TokenGraduated(token, address(0), 0, 0);
+
+        uint256 somiAmount = address(this).balance;
+        uint256 tokenAmount = LOCKED_LIQUIDITY_TOKENS;
+
+        require(somiAmount >= LOCKED_LIQUIDITY_SOMI + GRADUATION_FEE, "Insufficient SOMI for listing");
+        require(IERC20(token).balanceOf(address(this)) >= tokenAmount, "Insufficient tokens for listing");
+
+        if (GRADUATION_FEE > 0 && treasuryAddress != address(0)) {
+            payable(treasuryAddress).transfer(GRADUATION_FEE);
+            emit GraduationFeeSent(token, GRADUATION_FEE);
+            somiAmount -= GRADUATION_FEE;
+        }
+
+        uint256 totalSupply = IERC20(token).totalSupply();
+        uint256 treasuryFeeAmount = (totalSupply * TREASURY_FEE_PERCENT) / FEE_DENOMINATOR;
+
+        if (treasuryFeeAmount > 0 && treasuryAddress != address(0)) {
+            IERC20(token).safeTransfer(treasuryAddress, treasuryFeeAmount);
+            emit TreasuryFeeSent(token, treasuryFeeAmount);
+        }
+
+        address pairAddress = somnexFactory.getPair(token, WSOMI);
+        if (pairAddress == address(0)) {
+            pairAddress = somnexFactory.createPair(token, WSOMI);
+        }
+
+        IERC20(token).approve(address(somnexRouter), tokenAmount);
+
+        (uint amountToken, uint amountSOMI, uint liquidity) = somnexRouter.addLiquidityETH{value: somiAmount}(
+            token,
+            tokenAmount,
+            tokenAmount * 95 / 100,
+            somiAmount * 95 / 100,
+            address(this),
+            block.timestamp + 300
+        );
+
+        graduationInfo[token].pairAddress = pairAddress;
+        graduationInfo[token].liquidityTokens = liquidity;
+        graduationInfo[token].somiLocked = amountSOMI;
+        graduationInfo[token].tokensLocked = amountToken;
+
+        emit TokenGraduated(token, pairAddress, amountSOMI, amountToken);
+        emit LiquidityLocked(token, liquidity);
     }
     
-    function listOnDEX(address token) external payable nonReentrant returns (address poolAddress) {
+    function listOnDEX(address token) external payable nonReentrant returns (address pairAddress) {
         require(registry.isValidToken(token), "Invalid token");
         require(graduationInfo[token].graduated, "Not graduated");
-        require(graduationInfo[token].poolAddress == address(0), "Already listed");
-        
-        uint256 sttAmount = msg.value > 0 ? msg.value : LOCKED_LIQUIDITY_STT;
-        uint256 tokenAmount = LOCKED_LIQUIDITY_TOKENS;
-        
-        require(sttAmount >= LOCKED_LIQUIDITY_STT, "Insufficient STT");
-        
-        address wsttAddress = registry.getWSTT();
-        require(wsttAddress != address(0), "WSTT not set");
-        
-        WSTT wstt = WSTT(payable(wsttAddress));
-        wstt.deposit{value: sttAmount}();
-        
-        require(IERC20(token).balanceOf(address(this)) >= tokenAmount, "Insufficient tokens");
-        
-        IERC20(token).approve(QUICKSWAP_POSITION_MANAGER, tokenAmount);
-        IERC20(wsttAddress).approve(QUICKSWAP_POSITION_MANAGER, sttAmount);
-        
-        INonfungiblePositionManager positionManager = INonfungiblePositionManager(QUICKSWAP_POSITION_MANAGER);
-        
-        address token0 = token < wsttAddress ? token : wsttAddress;
-        address token1 = token < wsttAddress ? wsttAddress : token;
-        
-        uint160 sqrtPriceX96 = _calculateSqrtPriceX96(tokenAmount, sttAmount);
-        
-        poolAddress = positionManager.createAndInitializePoolIfNecessary(
-            token0,
-            token1,
-            POOL_FEE,
-            sqrtPriceX96
-        );
-        
-        INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
-            token0: token0,
-            token1: token1,
-            fee: POOL_FEE,
-            tickLower: -887220,
-            tickUpper: 887220,
-            amount0Desired: token == token0 ? tokenAmount : sttAmount,
-            amount1Desired: token == token0 ? sttAmount : tokenAmount,
-            amount0Min: (token == token0 ? tokenAmount : sttAmount) * 95 / 100,
-            amount1Min: (token == token0 ? sttAmount : tokenAmount) * 95 / 100,
-            recipient: address(this),
-            deadline: block.timestamp + 300
-        });
-        
-        (uint256 tokenId, , , ) = positionManager.mint(params);
-        
-        graduationInfo[token].poolAddress = poolAddress;
-        graduationInfo[token].lpTokenId = tokenId;
-        graduationInfo[token].sttLocked = sttAmount;
-        graduationInfo[token].tokensLocked = tokenAmount;
-        
-        emit LiquidityLocked(token, tokenId);
-        
-        return poolAddress;
+        require(graduationInfo[token].pairAddress != address(0), "Use graduateToken for first listing");
+
+        return graduationInfo[token].pairAddress;
     }
     
     function enablePublicTrading(address token) external onlyOwner {
         require(registry.isValidToken(token), "Invalid token");
         require(graduationInfo[token].graduated, "Not graduated");
-        require(graduationInfo[token].poolAddress != address(0), "Not listed on DEX");
+        require(graduationInfo[token].pairAddress != address(0), "Not listed on DEX");
         require(!graduationInfo[token].publicTradingEnabled, "Already enabled");
         
         MemeToken memeToken = MemeToken(token);
@@ -181,20 +180,9 @@ contract MarketGraduation is Ownable, ReentrancyGuard {
         emit TokenGraduated(token, address(0), 0, 0);
     }
     
-    function _calculateSqrtPriceX96(uint256 tokenAmount, uint256 sttAmount) internal pure returns (uint160) {
-        uint256 price = (sttAmount * (2**96)) / tokenAmount;
-        return uint160(_sqrt(price * (2**96)));
-    }
-    
-    function _sqrt(uint256 x) internal pure returns (uint256) {
-        if (x == 0) return 0;
-        uint256 z = (x + 1) / 2;
-        uint256 y = x;
-        while (z < y) {
-            y = z;
-            z = (x / z + z) / 2;
-        }
-        return y;
+    function setTreasuryAddress(address _treasury) external onlyOwner {
+        require(_treasury != address(0), "Invalid treasury address");
+        treasuryAddress = _treasury;
     }
     
     function getGraduationInfo(address token) external view returns (GraduationInfo memory) {
@@ -209,8 +197,8 @@ contract MarketGraduation is Ownable, ReentrancyGuard {
         return graduationInfo[token].publicTradingEnabled;
     }
     
-    function getPoolAddress(address token) external view returns (address) {
-        return graduationInfo[token].poolAddress;
+    function getPairAddress(address token) external view returns (address) {
+        return graduationInfo[token].pairAddress;
     }
     
     receive() external payable {}

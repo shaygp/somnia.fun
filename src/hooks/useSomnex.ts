@@ -1,7 +1,7 @@
 import { useWriteContract, useReadContract, useAccount, useChainId } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
 import { useToast } from '@/hooks/use-toast';
-import { CONTRACT_ADDRESSES, UNISWAP_V2_ROUTER_ABI, UNISWAP_V2_FACTORY_ABI, MEME_TOKEN_ABI } from '@/config/contracts';
+import { CONTRACT_ADDRESSES, UNISWAP_V2_ROUTER_ABI, UNISWAP_V2_FACTORY_ABI, MEME_TOKEN_ABI, MARKET_GRADUATION_ABI } from '@/config/contracts';
 
 const SOMNEX_INTEGRATION_ABI = [
   {
@@ -78,7 +78,7 @@ const SOMNEX_INTEGRATION_ABI = [
   {
     inputs: [{ name: "token", type: "address" }],
     name: "getTokenPrice",
-    outputs: [{ name: "priceInSTT", type: "uint256" }],
+    outputs: [{ name: "priceInSOMI", type: "uint256" }],
     stateMutability: "view",
     type: "function"
   },
@@ -113,7 +113,7 @@ export const useSomnexSwap = () => {
 
   const isTestnet = chainId === 50312;
   const routerAddress = CONTRACT_ADDRESSES.SOMNEX_ROUTER;
-  const wsttAddress = CONTRACT_ADDRESSES.WSTT;
+  const wsttAddress = CONTRACT_ADDRESSES.WSOMI;
 
   const { data: quote } = useReadContract({
     address: routerAddress as `0x${string}`,
@@ -153,7 +153,7 @@ export const useSomnexSwap = () => {
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
 
     try {
-      if (tokenIn === "STT") {
+      if (tokenIn === "SOMI") {
         const path = [wsttAddress, tokenOut];
         return writeContractAsync({
           address: routerAddress as `0x${string}`,
@@ -162,7 +162,7 @@ export const useSomnexSwap = () => {
           args: [amountOutMinWei, path, address, deadline],
           value: amountInWei,
         });
-      } else if (tokenOut === "STT") {
+      } else if (tokenOut === "SOMI") {
         const path = [tokenIn, wsttAddress];
 
         const approvalHash = await writeContractAsync({
@@ -224,36 +224,35 @@ export const useSomnexGraduation = (tokenAddress: string) => {
   const { writeContractAsync } = useWriteContract();
   const { toast } = useToast();
 
-  const isTestnet = chainId === 50312;
-  const somnexAddress = getSomnexAddress(isTestnet);
+  const marketGraduationAddress = CONTRACT_ADDRESSES.MARKET_GRADUATION;
 
   const { data: canGraduate, isLoading: checkingGraduation } = useReadContract({
-    address: somnexAddress as `0x${string}`,
-    abi: SOMNEX_INTEGRATION_ABI,
+    address: marketGraduationAddress as `0x${string}`,
+    abi: MARKET_GRADUATION_ABI,
     functionName: 'checkGraduation',
     args: [tokenAddress],
     query: {
-      enabled: !!tokenAddress,
+      enabled: !!tokenAddress && !!marketGraduationAddress,
     },
   });
 
   const { data: isGraduated } = useReadContract({
-    address: somnexAddress as `0x${string}`,
-    abi: SOMNEX_INTEGRATION_ABI,
+    address: marketGraduationAddress as `0x${string}`,
+    abi: MARKET_GRADUATION_ABI,
     functionName: 'isGraduated',
     args: [tokenAddress],
     query: {
-      enabled: !!tokenAddress,
+      enabled: !!tokenAddress && !!marketGraduationAddress,
     },
   });
 
   const { data: pairAddress } = useReadContract({
-    address: somnexAddress as `0x${string}`,
-    abi: SOMNEX_INTEGRATION_ABI,
+    address: marketGraduationAddress as `0x${string}`,
+    abi: MARKET_GRADUATION_ABI,
     functionName: 'getPairAddress',
     args: [tokenAddress],
     query: {
-      enabled: !!tokenAddress,
+      enabled: !!tokenAddress && !!marketGraduationAddress,
     },
   });
 
@@ -269,9 +268,9 @@ export const useSomnexGraduation = (tokenAddress: string) => {
 
     try {
       const hash = await writeContractAsync({
-        address: somnexAddress as `0x${string}`,
-        abi: SOMNEX_INTEGRATION_ABI,
-        functionName: 'graduateTokenToSomnex',
+        address: marketGraduationAddress as `0x${string}`,
+        abi: MARKET_GRADUATION_ABI,
+        functionName: 'graduateToken',
         args: [tokenAddress],
       });
 
@@ -303,11 +302,11 @@ export const useSomnexGraduation = (tokenAddress: string) => {
 
     try {
       const hash = await writeContractAsync({
-        address: somnexAddress as `0x${string}`,
-        abi: SOMNEX_INTEGRATION_ABI,
-        functionName: 'listOnSomnexDEX',
+        address: marketGraduationAddress as `0x${string}`,
+        abi: MARKET_GRADUATION_ABI,
+        functionName: 'listOnDEX',
         args: [tokenAddress],
-        value: parseEther('36'),
+        value: parseEther('15200'),
       });
 
       toast({
@@ -365,15 +364,15 @@ export const useSomnexPools = () => {
   const getPools = () => {
     return [
       {
-        token0: "STT",
+        token0: "SOMI",
         token1: "USDT",
         tvl: "2400000",
         volume24h: "450000",
         apr: "24.5"
       },
       {
-        token0: "STT",
-        token1: "WSTT",
+        token0: "SOMI",
+        token1: "WSOMI",
         tvl: "1800000",
         volume24h: "320000",
         apr: "18.2"

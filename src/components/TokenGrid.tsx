@@ -28,22 +28,9 @@ const TokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
   const { tokenInfo, isLoading: tokenInfoLoading, error: tokenInfoError } = useTokenInfo(tokenAddress);
   const { price, isLoading: priceLoading, error: priceError } = useTokenPrice(tokenAddress);
 
-  const isDemoToken = tokenAddress === '0x1234567890123456789012345678901234567890';
-
   console.log('TokenItem - tokenAddress:', tokenAddress, 'tokenInfo:', tokenInfo, 'error:', tokenInfoError);
 
-  const demoTokenInfo = {
-    name: "Somnia Cat",
-    symbol: "SOMCAT",
-    imageUri: "/catlayer.svg",
-    description: "The purrfect meme token for Somnia! Join the cat revolution on the blockchain.",
-    sttRaised: "12.5",
-    tokensSold: "2500000",
-    graduatedToDeX: false
-  };
-
-  // Handle errors for real tokens
-  if (!isDemoToken && tokenInfoError) {
+  if (tokenInfoError) {
     console.error('TokenItem error for', tokenAddress, tokenInfoError);
     return (
       <div className="p-4 border border-red-500/20 rounded-lg bg-red-500/5">
@@ -53,8 +40,7 @@ const TokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
     );
   }
 
-  // Handle loading state for real tokens
-  if (!isDemoToken && tokenInfoLoading) {
+  if (tokenInfoLoading) {
     return (
       <div className="p-4 border border-somnia-border rounded-lg bg-somnia-card animate-pulse">
         <div className="h-4 bg-gray-600 rounded mb-2"></div>
@@ -63,31 +49,27 @@ const TokenItem = ({ tokenAddress }: { tokenAddress: string }) => {
     );
   }
 
-  const displayTokenInfo = isDemoToken ? demoTokenInfo : tokenInfo;
-  const displayPrice = isDemoToken ? "0.000005" : price;
-  
-  // Don't render if we don't have token info for real tokens
-  if (!isDemoToken && !displayTokenInfo) {
-    console.log('TokenItem - no tokenInfo for non-demo token:', tokenAddress);
+  if (!tokenInfo) {
+    console.log('TokenItem - no tokenInfo for token:', tokenAddress);
     return null;
   }
 
   const tokenData: TokenData = {
     address: tokenAddress,
-    name: displayTokenInfo.name,
-    symbol: displayTokenInfo.symbol,
-    image: displayTokenInfo.imageUri || "https://via.placeholder.com/64",
-    marketCap: `${(parseFloat(displayTokenInfo.sttRaised) * 50).toFixed(1)}K`,
-    price: `${parseFloat(displayPrice).toFixed(8)} STT`,
-    change24h: isDemoToken ? 15.7 : Math.random() * 40 - 20,
-    replies: isDemoToken ? 142 : Math.floor(Math.random() * 1000),
-    holders: isDemoToken ? 89 : Math.floor(Math.random() * 5000),
-    description: displayTokenInfo.description || "A meme token on Somnia",
-    trending: parseFloat(displayTokenInfo.sttRaised) > 10,
-    liquidityPooled: (parseFloat(displayTokenInfo.sttRaised) / 80) * 100,
+    name: tokenInfo.name,
+    symbol: tokenInfo.symbol,
+    image: tokenInfo.imageUri || "https://via.placeholder.com/64",
+    marketCap: `${(parseFloat(tokenInfo.sttRaised) * 100).toFixed(0)} SOMI`,
+    price: `${parseFloat(price).toFixed(8)} SOMI`,
+    change24h: 0,
+    replies: 0,
+    holders: 0,
+    description: tokenInfo.description || "A meme token on Somnia",
+    trending: parseFloat(tokenInfo.sttRaised) > 1000,
+    liquidityPooled: (parseFloat(tokenInfo.sttRaised) / 10000) * 100,
     showChart: true,
-    graduatedToDeX: displayTokenInfo.graduatedToDeX,
-    sttRaised: displayTokenInfo.sttRaised
+    graduatedToDeX: tokenInfo.graduatedToDeX,
+    sttRaised: tokenInfo.sttRaised
   };
 
   return (
@@ -127,18 +109,14 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
     }
   }, [filter]);
 
-  const demoTokens = ['0x1234567890123456789012345678901234567890'];
-
   console.log('TokenGrid - tokens:', tokens, 'isLoading:', isLoading, 'error:', error);
 
   const filteredTokens = React.useMemo(() => {
-    // Always show the demo token, and add real tokens if they exist
-    const allTokens = tokens && tokens.length > 0 ? [...demoTokens, ...tokens] : demoTokens;
-    
+    const allTokens = tokens || [];
+
     console.log('TokenGrid - filteredTokens calculation:', {
       tokens,
       tokensLength: tokens?.length,
-      demoTokens,
       allTokens
     });
 
@@ -215,7 +193,7 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-somnia-card border border-somnia-border">
           <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            all ({tokens?.length || 1})
+            all ({tokens?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="trending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             trending

@@ -21,6 +21,60 @@ const tokenColors = [
   { accent: "text-somnia-blue", bg: "bg-blue-500/20", border: "border-blue-500/30" },
 ];
 
+const CreatedTokenItemWithFilter = ({ tokenAddress, userAddress }) => {
+  const { tokenInfo } = useTokenInfo(tokenAddress);
+
+  if (!tokenInfo || tokenInfo.creator?.toLowerCase() !== userAddress?.toLowerCase()) {
+    return null;
+  }
+
+  return <CreatedTokenItem tokenAddress={tokenAddress} />;
+};
+
+const CreatedTokenItem = ({ tokenAddress }) => {
+  const { tokenInfo } = useTokenInfo(tokenAddress);
+
+  if (!tokenInfo) return null;
+
+  return (
+    <Card className="bg-somnia-card border-somnia-border p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <img src={tokenInfo.imageUri || "/catlayer.svg"} alt={tokenInfo.name} className="w-12 h-12 rounded-full border-2 border-somnia-border" />
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">{tokenInfo.name}</h3>
+            <p className="text-sm text-muted-foreground">${tokenInfo.symbol}</p>
+          </div>
+          <Badge variant="secondary" className="bg-primary/20 text-primary">
+            Creator
+          </Badge>
+        </div>
+
+        <div className="grid grid-cols-3 gap-8 text-right">
+          <div>
+            <p className="text-sm text-muted-foreground">SOMI Raised</p>
+            <p className="font-semibold text-foreground">{parseFloat(tokenInfo.sttRaised).toFixed(2)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Tokens Sold</p>
+            <p className="font-semibold text-foreground">{parseFloat(tokenInfo.tokensSold).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Status</p>
+            <Badge variant="secondary" className="bg-primary/20 text-primary">
+              {tokenInfo.graduatedToDeX ? "Graduated" : "Active"}
+            </Badge>
+          </div>
+        </div>
+
+        <Button size="sm" variant="outline" className="border-somnia-border hover:bg-somnia-hover" asChild>
+          <Link to={`/token/${tokenAddress}`}>Manage</Link>
+        </Button>
+      </div>
+    </Card>
+  );
+};
+
 const UserTokenItem = ({ tokenAddress, colorTheme, onValueUpdate }) => {
   const { tokenInfo } = useTokenInfo(tokenAddress);
   const { balance } = useTokenBalance(tokenAddress);
@@ -62,7 +116,7 @@ const UserTokenItem = ({ tokenAddress, colorTheme, onValueUpdate }) => {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Price</p>
-            <p className="font-semibold text-foreground">{parseFloat(price).toFixed(8)} STT</p>
+            <p className="font-semibold text-foreground">{parseFloat(price).toFixed(8)} SOMI</p>
           </div>
         </div>
 
@@ -82,17 +136,6 @@ const Portfolio = () => {
   const { tokens, isLoading: tokensLoading } = useAllTokens();
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const createdTokens = [
-    {
-      name: "My Token",
-      symbol: "MYTKN",
-      image: "/catlayer.svg",
-      holders: 234,
-      volume24h: "$5,678",
-      createdDate: "2024-01-15",
-      status: "Active"
-    }
-  ];
 
   const [tokenValues, setTokenValues] = useState(new Map());
 
@@ -220,43 +263,31 @@ const Portfolio = () => {
 
           <TabsContent value="created" className="mt-6">
             <div className="space-y-4">
-              {createdTokens.map((token, index) => (
-                <Card key={index} className="bg-somnia-card border-somnia-border p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <img src={token.image} alt={token.name} className="w-12 h-12 rounded-full border-2 border-somnia-border" />
-                      <div>
-                        <h3 className="text-lg font-semibold text-foreground">{token.name}</h3>
-                        <p className="text-sm text-muted-foreground">${token.symbol}</p>
-                      </div>
-                      <Badge variant="secondary" className="bg-primary/20 text-primary">
-                        Creator
-                      </Badge>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-8 text-right">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Holders</p>
-                        <p className="font-semibold text-foreground">{token.holders}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">24h Volume</p>
-                        <p className="font-semibold text-foreground">{token.volume24h}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Status</p>
-                        <Badge variant="secondary" className="bg-primary/20 text-primary">
-                          {token.status}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <Button size="sm" variant="outline" className="border-somnia-border hover:bg-somnia-hover">
-                      Manage
-                    </Button>
+              {!address ? (
+                <Card className="bg-somnia-card border-somnia-border p-12">
+                  <div className="text-center">
+                    <Wallet className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Connect your wallet to view your created tokens</p>
                   </div>
                 </Card>
-              ))}
+              ) : tokensLoading ? (
+                <Card className="bg-somnia-card border-somnia-border p-12">
+                  <div className="text-center">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
+                    <p className="text-muted-foreground">Loading your created tokens...</p>
+                  </div>
+                </Card>
+              ) : (
+                <>
+                  {tokens?.map((tokenAddress) => (
+                    <CreatedTokenItemWithFilter
+                      key={tokenAddress}
+                      tokenAddress={tokenAddress}
+                      userAddress={address}
+                    />
+                  ))}
+                </>
+              )}
             </div>
           </TabsContent>
 
