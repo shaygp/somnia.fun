@@ -38,7 +38,7 @@ const TokenItem = ({ tokenData }: { tokenData: any }) => {
     address: tokenData.address,
     name: tokenData.name,
     symbol: tokenData.symbol,
-    image: tokenData.logo || `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenData.address}`,
+    image: tokenData.logo || tokenData.imageUri || tokenData.image || `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenData.address}`,
     marketCap: `${tokenData.somiRaised} SOMI`,
     price: `${calculatedPrice.toFixed(8)} SOMI`,
     change24h: 0,

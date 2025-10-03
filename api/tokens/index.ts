@@ -205,19 +205,31 @@ async function getTokenData(tokenAddress: string) {
 
     const name = (tokenMetadata?.[0] && tokenMetadata[0] !== '') ? tokenMetadata[0] : explorerTokenData.name || 'Unknown Token';
     const symbol = (tokenMetadata?.[1] && tokenMetadata[1] !== '') ? tokenMetadata[1] : explorerTokenData.token?.symbol || explorerTokenData.name || 'TKN';
-    const imageUri = tokenImageUri || (tokenMetadata?.[2] && tokenMetadata[2] !== '') ? tokenMetadata[2] : `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`;
+    
+    // Priority: 1) tokenImageUri from direct contract call, 2) imageUri from TokenFactory metadata, 3) fallback
+    let finalImageUri = '';
+    if (tokenImageUri && tokenImageUri.trim() !== '') {
+      finalImageUri = tokenImageUri;
+    } else if (tokenMetadata?.[2] && tokenMetadata[2].trim() !== '') {
+      finalImageUri = tokenMetadata[2];
+    } else {
+      finalImageUri = `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`;
+    }
+    
     const description = tokenDescription || (tokenMetadata?.[3] && tokenMetadata[3] !== '') ? tokenMetadata[3] : '';
     const creator = actualCreator;
     const createdAt = tokenMetadata?.[5] ? Number(tokenMetadata[5]) * 1000 : (explorerTokenData.timestamp ? new Date(explorerTokenData.timestamp).getTime() : Date.now());
     const totalSupply = tokenMetadata?.[6] ? formatEther(tokenMetadata[6]) : (explorerTokenData.token?.total_supply ? formatEther(explorerTokenData.token.total_supply) : '1000000000');
 
-    console.log(`Token ${tokenAddress} final data:`, { name, symbol, imageUri, description: description || '(empty)' });
+    console.log(`Token ${tokenAddress} final data:`, { name, symbol, imageUri: finalImageUri, description: description || '(empty)' });
 
     return {
       address: tokenAddress,
       name,
       symbol,
-      logo: imageUri,
+      logo: finalImageUri,
+      imageUri: finalImageUri, // Include both for compatibility
+      image: finalImageUri,    // Include both for compatibility
       description,
       creator,
       createdAt,
