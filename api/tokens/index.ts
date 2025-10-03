@@ -216,7 +216,15 @@ async function getTokenData(tokenAddress: string) {
       finalImageUri = `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenAddress}`;
     }
     
-    const description = tokenDescription || (tokenMetadata?.[3] && tokenMetadata[3] !== '') ? tokenMetadata[3] : '';
+    // Priority: 1) description from direct contract call, 2) description from TokenFactory metadata, 3) empty
+    let finalDescription = '';
+    if (tokenDescription && typeof tokenDescription === 'string' && tokenDescription.trim() !== '') {
+      finalDescription = tokenDescription;
+    } else if (tokenMetadata?.[3] && typeof tokenMetadata[3] === 'string' && tokenMetadata[3].trim() !== '') {
+      finalDescription = tokenMetadata[3];
+    }
+    
+    const description = finalDescription;
     const creator = actualCreator;
     const createdAt = tokenMetadata?.[5] ? Number(tokenMetadata[5]) * 1000 : (explorerTokenData.timestamp ? new Date(explorerTokenData.timestamp).getTime() : Date.now());
     const totalSupply = tokenMetadata?.[6] ? formatEther(tokenMetadata[6]) : (explorerTokenData.token?.total_supply ? formatEther(explorerTokenData.token.total_supply) : '1000000000');
