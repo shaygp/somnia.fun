@@ -19,7 +19,7 @@ const Index = () => {
         <Header />
         <div className="flex relative z-10">
           <Sidebar />
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-3 md:p-6">
             {help && (
               <div className="mb-6 bg-somnia-card border border-somnia-border rounded-lg p-6">
                 <h2 className="text-xl font-bold text-foreground mb-4">Help & Documentation</h2>

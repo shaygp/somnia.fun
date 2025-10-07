@@ -171,24 +171,26 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
   return (
     <div className="space-y-6 relative scan-lines">
       {/* Terminal Header */}
-      <div className="flex items-center justify-between border border-somnia-border rounded bg-somnia-card p-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border border-somnia-border rounded bg-somnia-card p-3 md:p-4 space-y-3 sm:space-y-0">
         <div className="flex items-center space-x-3">
           <span className="text-primary">$</span>
           <div>
-            <h1 className="text-lg font-medium text-primary">~/somnia.fun/tokens</h1>
-            <p className="text-sm text-muted-foreground">ls -la --sort=market_cap --filter=active</p>
+            <h1 className="text-base md:text-lg font-medium text-primary">~/somnia.fun/tokens</h1>
+            <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">ls -la --sort=market_cap --filter=active</p>
           </div>
         </div>
         
-        <div className="flex items-center space-x-3">
-            <div className="relative">
+        <div className="flex items-center space-x-2 md:space-x-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
               <Button
                 variant="outline"
-                className="border-somnia-border hover:bg-somnia-hover"
+                size="sm"
+                className="border-somnia-border hover:bg-somnia-hover w-full sm:w-auto text-xs md:text-sm"
                 onClick={() => setFilterOpen(!filterOpen)}
               >
-                <Filter className="w-4 h-4 mr-2" />
-                --filter
+                <Filter className="w-4 h-4 mr-1 md:mr-2" />
+                <span className="hidden sm:inline">--filter</span>
+                <span className="sm:hidden">Filter</span>
               </Button>
               {filterOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-somnia-card border border-somnia-border rounded shadow-lg z-50">
@@ -221,32 +223,34 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
             </div>
             <Button
               variant="outline"
-              className="border-somnia-border hover:bg-somnia-hover"
+              size="sm"
+              className="border-somnia-border hover:bg-somnia-hover flex-1 sm:flex-none text-xs md:text-sm"
               onClick={() => {
                 const sorts: ("market_cap" | "created" | "holders")[] = ["market_cap", "created", "holders"];
                 const currentIndex = sorts.indexOf(sortBy);
                 setSortBy(sorts[(currentIndex + 1) % sorts.length]);
               }}
             >
-              <SortAsc className="w-4 h-4 mr-2" />
-              --sort={sortBy}
+              <SortAsc className="w-4 h-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">--sort={sortBy}</span>
+              <span className="sm:hidden">Sort</span>
             </Button>
         </div>
       </div>
 
       {/* Terminal Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-somnia-card border border-somnia-border">
-          <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+        <TabsList className="bg-somnia-card border border-somnia-border w-full justify-start overflow-x-auto">
+          <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm whitespace-nowrap">
             all ({tokens?.length || 0})
           </TabsTrigger>
-          <TabsTrigger value="trending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsTrigger value="trending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm whitespace-nowrap">
             trending
           </TabsTrigger>
-          <TabsTrigger value="new" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsTrigger value="new" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm whitespace-nowrap">
             new
           </TabsTrigger>
-          <TabsTrigger value="graduated" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsTrigger value="graduated" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs md:text-sm whitespace-nowrap">
             graduated
           </TabsTrigger>
         </TabsList>
@@ -257,7 +261,7 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
               <p className="text-muted-foreground"># No tokens found. Create the first one!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {filteredTokens.map((token: any) => (
                 <TokenItem key={token.address} tokenData={token} />
               ))}
@@ -271,7 +275,7 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
               <p className="text-muted-foreground"># No trending tokens yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {filteredTokens.map((token: any) => (
                 <TokenItem key={token.address} tokenData={token} />
               ))}
@@ -285,7 +289,7 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
               <p className="text-muted-foreground"># No new tokens yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {filteredTokens.map((token: any) => (
                 <TokenItem key={token.address} tokenData={token} />
               ))}
@@ -299,7 +303,7 @@ const TokenGrid = ({ filter }: TokenGridProps) => {
               <p className="text-muted-foreground"># No graduated tokens yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {filteredTokens.map((token: any) => (
                 <TokenItem key={token.address} tokenData={token} />
               ))}

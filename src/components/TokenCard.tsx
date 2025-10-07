@@ -39,7 +39,7 @@ const TokenCard = ({
 }: TokenCardProps) => {
   return (
     <Card className="group bg-somnia-card border-somnia-border hover:border-primary/50 transition-all duration-300 hover:shadow-somnia-glow cursor-pointer relative overflow-hidden">
-      <div className="p-4 relative z-10">
+      <div className="p-3 md:p-4 relative z-10">
         {/* Terminal-style header */}
         <div className="flex items-start justify-between mb-3 border-b border-somnia-border pb-2">
           <div className="flex items-center space-x-3">
@@ -51,7 +51,7 @@ const TokenCard = ({
                   const target = e.target as HTMLImageElement;
                   target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${address || name}`;
                 }}
-                className="w-10 h-10 rounded border border-somnia-border group-hover:border-primary/50 transition-colors"
+                className="w-8 h-8 md:w-10 md:h-10 rounded border border-somnia-border group-hover:border-primary/50 transition-colors"
               />
               {trending && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded flex items-center justify-center">
@@ -60,7 +60,7 @@ const TokenCard = ({
               )}
             </div>
             <div>
-              <h3 className="text-sm font-medium text-primary group-hover:text-primary/80 transition-colors">
+              <h3 className="text-xs md:text-sm font-medium text-primary group-hover:text-primary/80 transition-colors line-clamp-1">
                 {name.toUpperCase()}
               </h3>
               <p className="text-xs text-muted-foreground">
@@ -78,13 +78,13 @@ const TokenCard = ({
 
         {/* Description */}
         {description && (
-          <p className="text-xs text-muted-foreground mb-3 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-muted-foreground mb-2 md:mb-3 line-clamp-2 leading-relaxed">
             # {description}
           </p>
         )}
 
         {/* Terminal-style stats */}
-        <div className="space-y-1 mb-3 text-xs">
+        <div className="space-y-1 mb-2 md:mb-3 text-xs">
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">market_cap:</span>
             <span className="text-foreground font-medium">{marketCap}</span>
@@ -110,11 +110,11 @@ const TokenCard = ({
 
         {/* Terminal actions */}
         <div className="space-y-2 pt-2 border-t border-somnia-border">
-          <div className="grid grid-cols-2 gap-2">
-            <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs">
+          <div className="grid grid-cols-2 gap-1 md:gap-2">
+            <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-2">
               buy()
             </Button>
-            <Button size="sm" variant="outline" className="border-somnia-border hover:bg-somnia-hover text-xs">
+            <Button size="sm" variant="outline" className="border-somnia-border hover:bg-somnia-hover text-xs px-2">
               sell()
             </Button>
           </div>

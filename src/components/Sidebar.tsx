@@ -24,7 +24,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-64 bg-somnia-card border-r border-somnia-border p-4 hidden lg:block">
+    <aside className="w-64 bg-somnia-card border-r border-somnia-border p-4 hidden xl:block">
       {/* Navigation */}
       <div className="space-y-2 mb-6">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-2">

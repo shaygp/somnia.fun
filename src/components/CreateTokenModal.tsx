@@ -182,8 +182,8 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
   }, [isSuccess, isError, step, toast, txHash, txError]);
 
   const renderStep1 = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-4 md:space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
         <div className="space-y-2">
           <Label htmlFor="name">Token Name *</Label>
           <Input
@@ -214,7 +214,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
           placeholder="Tell the world about your token..."
           value={formData.description}
           onChange={(e) => handleInputChange("description", e.target.value)}
-          className="bg-somnia-card border-somnia-border focus:border-primary min-h-[100px]"
+          className="bg-somnia-card border-somnia-border focus:border-primary min-h-[80px] md:min-h-[100px] resize-none"
           maxLength={280}
         />
         <p className="text-xs text-muted-foreground text-right">
@@ -233,7 +233,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
             className="bg-somnia-card border-somnia-border focus:border-primary"
           />
           <div className="relative">
-            <div className="border-2 border-dashed border-somnia-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+            <div className="border-2 border-dashed border-somnia-border rounded-lg p-4 md:p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
               <input
                 type="file"
                 accept="image/*"
@@ -247,7 +247,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
                     <img
                       src={formData.imageUri}
                       alt="Preview"
-                      className="w-20 h-20 mx-auto rounded-lg object-cover border border-somnia-border"
+                      className="w-16 h-16 md:w-20 md:h-20 mx-auto rounded-lg object-cover border border-somnia-border"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
@@ -275,12 +275,12 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
         </div>
       </div>
 
-      <div className="bg-somnia-gradient rounded-lg p-4 border border-somnia-border">
+      <div className="bg-somnia-gradient rounded-lg p-3 md:p-4 border border-somnia-border">
         <h4 className="font-semibold text-foreground mb-3 flex items-center">
           <Coins className="w-4 h-4 mr-2 text-primary" />
           Bonding Curve Mechanics
         </h4>
-        <div className="space-y-2 text-sm">
+        <div className="space-y-1 md:space-y-2 text-xs md:text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Creation Fee:</span>
             <span className="text-primary font-medium">{formData.creationFee} SOMI</span>
@@ -322,7 +322,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
         <Button
           onClick={handleCreateToken}
           disabled={!formData.name || !formData.symbol || !formData.description || isCreating || isConfirming}
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm md:text-base"
         >
           {isCreating || isConfirming ? (
             <>
@@ -346,7 +346,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
         <h3 className="text-lg font-semibold text-foreground mb-2">Creating Your Token</h3>
         <p className="text-muted-foreground">{statusMessage || "Processing transaction..."}</p>
       </div>
-      <Progress value={isConfirming ? 65 : 35} className="w-full" />
+      <Progress value={isConfirming ? 65 : 35} className="w-full h-2" />
 
       {txHash && (
         <div className="bg-somnia-card rounded-lg p-4 border border-somnia-border">
@@ -365,7 +365,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
         </div>
       )}
 
-      <div className="space-y-2 text-sm">
+      <div className="space-y-2 text-xs md:text-sm">
         <div className="flex items-center justify-center space-x-2">
           <div className={`w-2 h-2 rounded-full ${txHash ? 'bg-primary' : 'bg-muted animate-pulse'}`}></div>
           <span className={txHash ? 'text-foreground' : 'text-muted-foreground'}>Transaction submitted</span>
@@ -414,7 +414,7 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] bg-somnia-card border-somnia-border">
+      <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto bg-somnia-card border-somnia-border">
         <DialogHeader>
           <DialogTitle className="text-foreground">
             {step === 1 && "Create New Token"}

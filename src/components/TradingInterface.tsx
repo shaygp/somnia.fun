@@ -476,27 +476,27 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
 
   return (
     <Card className="bg-card border-border">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+      <CardHeader className="pb-3 md:pb-6">
+        <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
           <div className="flex items-center space-x-3">
             <img 
               src={tokenInfo.imageUri || "https://via.placeholder.com/40"} 
               alt={tokenInfo.name}
-              className="w-10 h-10 rounded-full"
+              className="w-8 h-8 md:w-10 md:h-10 rounded-full"
             />
             <div>
-              <h3 className="font-bold">{tokenInfo.name}</h3>
-              <p className="text-sm text-muted-foreground">${tokenInfo.symbol}</p>
+              <h3 className="font-bold text-sm md:text-base">{tokenInfo.name}</h3>
+              <p className="text-xs md:text-sm text-muted-foreground">${tokenInfo.symbol}</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="font-bold text-lg">{parseFloat(price).toFixed(8)} SOMI</p>
+          <div className="text-left sm:text-right">
+            <p className="font-bold text-base md:text-lg">{parseFloat(price).toFixed(8)} SOMI</p>
             <p className="text-xs text-muted-foreground">per token</p>
           </div>
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 md:space-y-6 p-3 md:p-6">
         <CurveInitializer 
           tokenAddress={tokenAddress} 
           onInitialized={() => {

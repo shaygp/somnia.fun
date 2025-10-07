@@ -150,20 +150,22 @@ const WalletConnection = ({}: WalletConnectionProps) => {
       <Button 
         onClick={() => setShowModal(true)}
         variant="outline" 
-        className="border-somnia-border hover:bg-somnia-hover"
+        size="sm"
+        className="border-somnia-border hover:bg-somnia-hover text-xs md:text-sm px-2 md:px-4"
       >
-        <Wallet className="w-4 h-4 mr-2" />
-        Connect Wallet
+        <Wallet className="w-4 h-4 mr-1 md:mr-2" />
+        <span className="hidden sm:inline">Connect Wallet</span>
+        <span className="sm:hidden">Connect</span>
       </Button>
 
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-[400px] bg-somnia-card border-somnia-border">
+        <DialogContent className="w-[95vw] max-w-[400px] bg-somnia-card border-somnia-border">
           <DialogHeader>
             <DialogTitle className="text-foreground">Connect Your Wallet</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="bg-somnia-gradient rounded-lg p-4 border border-somnia-border">
+            <div className="bg-somnia-gradient rounded-lg p-3 md:p-4 border border-somnia-border">
               <h4 className="font-semibold text-foreground mb-2">Welcome to Somnia</h4>
               <p className="text-sm text-muted-foreground">
                 Connect your wallet to create and trade tokens on Somnia blockchain.
@@ -175,7 +177,7 @@ const WalletConnection = ({}: WalletConnectionProps) => {
                 <Button
                   key={wallet.name}
                   variant="outline"
-                  className="w-full justify-start p-4 h-auto border-somnia-border hover:bg-somnia-hover hover:border-primary/50 transition-all"
+                  className="w-full justify-start p-3 md:p-4 h-auto border-somnia-border hover:bg-somnia-hover hover:border-primary/50 transition-all"
                   onClick={() => handleWalletConnect(wallet.connector, wallet.name)}
                   disabled={isPending}
                 >
