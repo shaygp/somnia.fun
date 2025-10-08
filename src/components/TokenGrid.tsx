@@ -48,7 +48,7 @@ const TokenItem = ({ tokenData }: { tokenData: any }) => {
     trending: parseFloat(tokenData.somiRaised) > 100,
     liquidityPooled: parseFloat(tokenData.somiRaised),
     tokensSold: parseFloat(tokenData.tokensSold),
-    showChart: true,
+    showChart: false,
     graduatedToDeX: tokenData.graduated,
     sttRaised: tokenData.somiRaised
   };
@@ -58,7 +58,7 @@ const TokenItem = ({ tokenData }: { tokenData: any }) => {
       to={`/token/${tokenData.address}`}
       className="block transition-transform hover:scale-[1.02]"
     >
-      <TokenCard {...cardData} address={tokenData.address} />
+      <TokenCard {...cardData} address={tokenData.address} graduatedToDeX={tokenData.graduated} sttRaised={tokenData.somiRaised} />
     </Link>
   );
 };
