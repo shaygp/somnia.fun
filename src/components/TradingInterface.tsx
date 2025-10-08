@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { parseEther } from "viem";
 import { usePumpFun, useTokenPrice, useTokenInfo, useTokenBalance } from "@/hooks/usePumpFun";
 import { logTransaction, validateTransactionHash } from "@/utils/debug";
-import { useAccount, useWaitForTransactionReceipt, useChainId, useSwitchChain, useReadContract } from 'wagmi';
+import { useAccount, useWaitForTransactionReceipt, useChainId, useSwitchChain, useReadContract, useBalance } from 'wagmi';
 import { somniaMainnetChain } from '@/config/wagmi';
 import { CONTRACT_ADDRESSES, MEME_TOKEN_ABI } from "@/config/contracts";
 import { useSomnexGraduation } from "@/hooks/useSomnex";
@@ -28,6 +28,14 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
   const { tokenInfo, isLoading: tokenInfoLoading, refetch: refetchTokenInfo } = useTokenInfo(tokenAddress);
   const { price, error: priceError } = useTokenPrice(tokenAddress);
   const { balance: tokenBalance, refetch: refetchBalance } = useTokenBalance(tokenAddress);
+  
+  // Get SOMI balance for buy percentage calculations
+  const { data: somiBalance } = useBalance({
+    address: address,
+    query: {
+      enabled: !!address,
+    },
+  });
   
   // Check token allowance for selling
   const { data: allowance, refetch: refetchAllowance, error: allowanceError } = useReadContract({
@@ -59,6 +67,21 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
     type: "buy" | "sell" | "create";
   } | null>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
+
+  // Percentage calculation functions
+  const setPercentageOfSomiBalance = (percentage: number) => {
+    if (!somiBalance) return;
+    const balance = parseFloat(somiBalance.formatted);
+    const amount = (balance * percentage / 100).toFixed(6);
+    setSttAmount(amount);
+  };
+
+  const setPercentageOfTokenBalance = (percentage: number) => {
+    if (!tokenBalance) return;
+    const balance = parseFloat(tokenBalance);
+    const amount = (balance * percentage / 100).toFixed(6);
+    setTokenAmount(amount);
+  };
   
   const { isLoading: isConfirming, isSuccess, isError: txIsError, error: txError } = useWaitForTransactionReceipt({
     hash: txHash as `0x${string}`,
@@ -599,7 +622,12 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
 
             <TabsContent value="buy" className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">SOMI Amount</label>
+                <div className="flex justify-between">
+                  <label className="text-sm font-medium">SOMI Amount</label>
+                  <span className="text-xs text-muted-foreground">
+                    Balance: {somiBalance ? parseFloat(somiBalance.formatted).toFixed(4) : '0.0000'} SOMI
+                  </span>
+                </div>
                 <Input
                   type="number"
                   placeholder="0.01"
@@ -607,6 +635,22 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
                   onChange={(e) => setSttAmount(e.target.value)}
                   disabled={isTrading || isConfirming}
                 />
+                
+                {/* Percentage buttons for buying */}
+                <div className="grid grid-cols-5 gap-1">
+                  {[10, 25, 50, 75, 100].map((percentage) => (
+                    <Button
+                      key={percentage}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setPercentageOfSomiBalance(percentage)}
+                      disabled={isTrading || isConfirming || !somiBalance}
+                    >
+                      {percentage}%
+                    </Button>
+                  ))}
+                </div>
               </div>
               
               <div className="bg-muted/50 rounded-lg p-3">
@@ -658,12 +702,9 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <label className="text-sm font-medium">Token Amount</label>
-                  <button 
-                    className="text-xs text-primary hover:underline"
-                    onClick={() => setTokenAmount(tokenBalance)}
-                  >
-                    Max: {parseFloat(tokenBalance).toFixed(2)} {tokenInfo.symbol}
-                  </button>
+                  <span className="text-xs text-muted-foreground">
+                    Balance: {parseFloat(tokenBalance || "0").toFixed(2)} {tokenInfo.symbol}
+                  </span>
                 </div>
                 <Input
                   type="number"
@@ -672,6 +713,22 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
                   onChange={(e) => setTokenAmount(e.target.value)}
                   disabled={isTrading || isConfirming}
                 />
+                
+                {/* Percentage buttons for selling */}
+                <div className="grid grid-cols-5 gap-1">
+                  {[10, 25, 50, 75, 100].map((percentage) => (
+                    <Button
+                      key={percentage}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setPercentageOfTokenBalance(percentage)}
+                      disabled={isTrading || isConfirming || !tokenBalance || parseFloat(tokenBalance) === 0}
+                    >
+                      {percentage}%
+                    </Button>
+                  ))}
+                </div>
               </div>
               
               <div className="bg-muted/50 rounded-lg p-3">
