@@ -134,7 +134,7 @@ const Header = () => {
         </div>
 
         {/* Search Bar - Hidden on small screens */}
-        <div ref={searchRef} className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-8 relative">
+        <div ref={searchRef} className="hidden md:flex flex-1 max-w-lg mx-4 lg:mx-8 relative">
           <form onSubmit={handleSearch} className="w-full relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 z-10" />
             <Input

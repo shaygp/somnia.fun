@@ -4,6 +4,7 @@ import Sidebar from "@/components/Sidebar";
 import TokenGrid from "@/components/TokenGrid";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import StatsCards from "@/components/StatsCards";
+import MarketCapChart from "@/components/MarketCapChart";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -73,6 +74,15 @@ const Index = () => {
               </div>
             }>
               <StatsCards />
+            </ErrorBoundary>
+            
+            {/* Market Cap Distribution Chart */}
+            <ErrorBoundary fallback={
+              <div className="p-4 border border-red-500/20 rounded bg-red-500/5 text-center">
+                <p className="text-red-500">Error loading market cap chart</p>
+              </div>
+            }>
+              <MarketCapChart />
             </ErrorBoundary>
             <ErrorBoundary fallback={
               <div className="p-4 border border-red-500/20 rounded bg-red-500/5 text-center">
