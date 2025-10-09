@@ -1,23 +1,32 @@
 import { Search, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link, useNavigate } from "react-router-dom";
 import WalletConnection from "./WalletConnection";
 import CreateTokenModal from "./CreateTokenModal";
+import ProfileModal from "./ProfileModal";
 import { useState, useEffect, useRef } from "react";
+import { useAccount } from "wagmi";
+import { getProfile, createDefaultProfile } from "@/utils/profile";
 // Logo will be loaded from public directory
 import { useAllTokens, useTokenInfo } from "@/hooks/usePumpFun";
 
 const Header = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredTokens, setFilteredTokens] = useState<any[]>([]);
   const navigate = useNavigate();
   const { tokens } = useAllTokens();
+  const { isConnected, address } = useAccount();
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Get user profile for header avatar
+  const userProfile = address ? getProfile(address) || createDefaultProfile(address) : null;
 
   // Filter tokens based on search query
   useEffect(() => {
@@ -173,6 +182,25 @@ const Header = () => {
         {/* Action Buttons */}
         <div className="flex items-center space-x-2 md:space-x-3">
           <WalletConnection />
+          
+          {/* Profile Button - Only show when connected */}
+          {isConnected && userProfile && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowProfileModal(true)}
+              className="border-somnia-border hover:bg-somnia-hover text-foreground hover:text-primary flex items-center space-x-2"
+            >
+              <Avatar className="w-6 h-6">
+                <AvatarImage src={userProfile.avatar} alt={userProfile.displayName} />
+                <AvatarFallback className="bg-somnia-hover text-xs">
+                  {userProfile.displayName.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="hidden md:inline">{userProfile.displayName}</span>
+            </Button>
+          )}
+          
           <Button 
             onClick={() => setShowCreateModal(true)}
             className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs md:text-sm px-2 md:px-4"
@@ -282,6 +310,26 @@ const Header = () => {
               >
                 <Link to="/portfolio">./portfolio</Link>
               </Button>
+              
+              {/* Mobile Profile Button */}
+              {isConnected && userProfile && (
+                <Button
+                  variant="outline"
+                  className="justify-start border-somnia-border hover:bg-somnia-hover text-foreground hover:text-primary"
+                  onClick={() => {
+                    setShowProfileModal(true);
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Avatar className="w-4 h-4 mr-2">
+                    <AvatarImage src={userProfile.avatar} alt={userProfile.displayName} />
+                    <AvatarFallback className="bg-somnia-hover text-xs">
+                      {userProfile.displayName.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  ./profile
+                </Button>
+              )}
             </nav>
           </div>
         </div>
@@ -290,6 +338,11 @@ const Header = () => {
       <CreateTokenModal 
         isOpen={showCreateModal} 
         onClose={() => setShowCreateModal(false)} 
+      />
+      
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
       />
     </header>
   );

@@ -9,6 +9,7 @@ import BondingCurveChart from "@/components/BondingCurveChart";
 import DetailedBondingCurve from "@/components/DetailedBondingCurve";
 import TradingInterface from "@/components/TradingInterface";
 import ActivityFeed from "@/components/ActivityFeed";
+import TokenChat from "@/components/TokenChat";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTokenPrice } from "@/hooks/usePumpFun";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -259,6 +260,7 @@ const TokenDetail = () => {
                   <TabsTrigger value="about">About</TabsTrigger>
                   <TabsTrigger value="tokenomics">Tokenomics</TabsTrigger>
                   <TabsTrigger value="community">Community</TabsTrigger>
+                  <TabsTrigger value="chat">Chat</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="about" className="mt-6 space-y-4">
@@ -384,6 +386,13 @@ const TokenDetail = () => {
                       </div>
                     </div>
                   </div>
+                </TabsContent>
+
+                <TabsContent value="chat" className="mt-6">
+                  <TokenChat 
+                    tokenAddress={tokenAddress}
+                    tokenName={displayTokenInfo.name}
+                  />
                 </TabsContent>
               </Tabs>
             </Card>
