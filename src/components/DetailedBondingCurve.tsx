@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { TrendingUp, Target, Droplets, Users, Info, Calculator } from 'lucide-react';
+import { formatPrice, formatSomi } from '@/utils/formatters';
 
 interface DetailedBondingCurveProps {
   tokenSymbol: string;
@@ -93,20 +94,6 @@ const DetailedBondingCurve: React.FC<DetailedBondingCurveProps> = ({
   const curveData = generateBondingCurveData();
   
   
-  // Format price for human readability
-  const formatPrice = (price: number) => {
-    if (price === 0) return '0';
-    if (price >= 1) return price.toFixed(6);
-    if (price >= 0.001) return price.toFixed(8);
-    if (price >= 0.000001) return price.toFixed(10);
-    // Always use fixed notation, never scientific notation
-    return price.toFixed(10);
-  };
-  
-  // Format SOMI amounts to 3 decimal places
-  const formatSomi = (amount: number) => {
-    return amount.toFixed(3);
-  };
   
   // Calculate real market cap from API data
   const realMarketCap = liquidityPooled; // This comes from the API as the real market cap

@@ -15,6 +15,7 @@ import { useSomnexGraduation } from "@/hooks/useSomnex";
 import { Link } from "react-router-dom";
 import SuccessModal from "@/components/SuccessModal";
 import CurveInitializer from "@/components/CurveInitializer";
+import { formatPrice } from "@/utils/formatters";
 
 interface TradingInterfaceProps {
   tokenAddress: string;
@@ -509,7 +510,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
             </div>
           </div>
           <div className="text-left sm:text-right">
-            <p className="font-bold text-base md:text-lg">{parseFloat(price).toFixed(8)} SOMI</p>
+            <p className="font-bold text-base md:text-lg">{formatPrice(parseFloat(price))} SOMI</p>
             <p className="text-xs text-muted-foreground">per token</p>
           </div>
         </CardTitle>

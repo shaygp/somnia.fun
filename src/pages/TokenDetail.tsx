@@ -16,6 +16,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { parseSocialLinksFromDescription } from "@/utils/socialLinks";
+import { formatPrice } from "@/utils/formatters";
 
 const TokenDetail = () => {
   const { tokenAddress } = useParams();
@@ -217,7 +218,7 @@ const TokenDetail = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="bg-somnia-card border-somnia-border p-4">
             <p className="text-sm text-muted-foreground">Price</p>
-            <p className="text-xl font-bold text-foreground">{parseFloat(displayPrice).toFixed(8)} SOMI</p>
+            <p className="text-xl font-bold text-foreground">{formatPrice(parseFloat(displayPrice))} SOMI</p>
             <p className="text-sm text-muted-foreground">per token</p>
           </Card>
           

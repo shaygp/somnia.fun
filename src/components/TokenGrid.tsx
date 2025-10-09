@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Filter, SortAsc, Loader2 } from "lucide-react";
 import { useAllTokens, useTokenInfo, useTokenPrice } from "@/hooks/usePumpFun";
+import { formatPrice } from "@/utils/formatters";
 
 interface TokenData {
   address: string;
@@ -40,7 +41,7 @@ const TokenItem = ({ tokenData }: { tokenData: any }) => {
     symbol: tokenData.symbol,
     image: tokenData.logo || tokenData.imageUri || tokenData.image || `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenData.address}`,
     marketCap: `${tokenData.somiRaised} SOMI`,
-    price: `${calculatedPrice.toFixed(8)} SOMI`,
+    price: `${formatPrice(calculatedPrice)} SOMI`,
     change24h: 0,
     replies: 0,
     holders: 0,
