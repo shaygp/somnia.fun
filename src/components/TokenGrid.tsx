@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Filter, SortAsc, Loader2 } from "lucide-react";
 import { useAllTokens, useTokenInfo, useTokenPrice } from "@/hooks/usePumpFun";
+import { formatPrice } from "@/utils/formatters";
 
 interface TokenData {
   address: string;
@@ -40,7 +41,7 @@ const TokenItem = ({ tokenData }: { tokenData: any }) => {
     symbol: tokenData.symbol,
     image: tokenData.logo || tokenData.imageUri || tokenData.image || `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenData.address}`,
     marketCap: `${tokenData.somiRaised} SOMI`,
-    price: `${calculatedPrice.toFixed(8)} SOMI`,
+    price: `${formatPrice(calculatedPrice)} SOMI`,
     change24h: 0,
     replies: 0,
     holders: 0,
@@ -48,7 +49,7 @@ const TokenItem = ({ tokenData }: { tokenData: any }) => {
     trending: parseFloat(tokenData.somiRaised) > 100,
     liquidityPooled: parseFloat(tokenData.somiRaised),
     tokensSold: parseFloat(tokenData.tokensSold),
-    showChart: true,
+    showChart: false,
     graduatedToDeX: tokenData.graduated,
     sttRaised: tokenData.somiRaised
   };
@@ -58,7 +59,7 @@ const TokenItem = ({ tokenData }: { tokenData: any }) => {
       to={`/token/${tokenData.address}`}
       className="block transition-transform hover:scale-[1.02]"
     >
-      <TokenCard {...cardData} address={tokenData.address} />
+      <TokenCard {...cardData} address={tokenData.address} graduatedToDeX={tokenData.graduated} sttRaised={tokenData.somiRaised} />
     </Link>
   );
 };

@@ -1,17 +1,22 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Share2, Star, ExternalLink } from "lucide-react";
+import { TelegramIcon, DiscordIcon, TwitterIcon } from "@/components/icons/SocialIcons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BondingCurveChart from "@/components/BondingCurveChart";
+import DetailedBondingCurve from "@/components/DetailedBondingCurve";
 import TradingInterface from "@/components/TradingInterface";
 import ActivityFeed from "@/components/ActivityFeed";
+import TokenChat from "@/components/TokenChat";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTokenPrice } from "@/hooks/usePumpFun";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { parseSocialLinksFromDescription } from "@/utils/socialLinks";
+import { formatPrice } from "@/utils/formatters";
 
 const TokenDetail = () => {
   const { tokenAddress } = useParams();
@@ -84,6 +89,14 @@ const TokenDetail = () => {
 
   const displayTokenInfo = tokenInfo;
   const displayPrice = price && price !== "0" ? price : "0.000001";
+  
+  // Parse social links from description
+  const { cleanDescription, socialLinks } = useMemo(() => {
+    if (!displayTokenInfo?.description) {
+      return { cleanDescription: '', socialLinks: {} };
+    }
+    return parseSocialLinksFromDescription(displayTokenInfo.description);
+  }, [displayTokenInfo?.description]);
   
   if (!tokenAddress) {
     return <div>Token not found</div>;
@@ -205,7 +218,7 @@ const TokenDetail = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="bg-somnia-card border-somnia-border p-4">
             <p className="text-sm text-muted-foreground">Price</p>
-            <p className="text-xl font-bold text-foreground">{parseFloat(displayPrice).toFixed(8)} SOMI</p>
+            <p className="text-xl font-bold text-foreground">{formatPrice(parseFloat(displayPrice))} SOMI</p>
             <p className="text-sm text-muted-foreground">per token</p>
           </Card>
           
@@ -232,12 +245,13 @@ const TokenDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Chart and Info */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Bonding Curve Chart */}
-            <BondingCurveChart
+            {/* Detailed Bonding Curve Analysis */}
+            <DetailedBondingCurve
               tokenSymbol={displayTokenInfo.symbol}
               currentSupply={parseFloat(displayTokenInfo.tokensSold)}
               currentPrice={parseFloat(displayPrice)}
               liquidityPooled={parseFloat(displayTokenInfo.sttRaised)}
+              totalSupply={parseFloat(displayTokenInfo.totalSupply)}
             />
 
             {/* Token Information */}
@@ -247,12 +261,13 @@ const TokenDetail = () => {
                   <TabsTrigger value="about">About</TabsTrigger>
                   <TabsTrigger value="tokenomics">Tokenomics</TabsTrigger>
                   <TabsTrigger value="community">Community</TabsTrigger>
+                  <TabsTrigger value="chat">Chat</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="about" className="mt-6 space-y-4">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground mb-3">About {displayTokenInfo.name}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{displayTokenInfo.description}</p>
+                    <p className="text-muted-foreground leading-relaxed">{cleanDescription || displayTokenInfo.description}</p>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -277,18 +292,6 @@ const TokenDetail = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Creator</p>
                       <p className="text-sm font-mono text-foreground">{displayTokenInfo.creator.slice(0, 20)}...</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Created At</p>
-                      <p className="text-sm text-foreground">
-                        {displayTokenInfo.createdAt
-                          ? new Date(displayTokenInfo.createdAt).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })
-                          : 'Unknown'}
-                      </p>
                     </div>
                   </div>
                 </TabsContent>
@@ -321,18 +324,76 @@ const TokenDetail = () => {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-foreground">Community</h3>
                     <p className="text-muted-foreground">Join the {displayTokenInfo.name} community and start trading on Somnia.</p>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-muted-foreground">Contract:</span>
-                      <a 
-                        href={`https://explorer.somnia.network/address/${tokenAddress}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline"
-                      >
-                        View on OKLink Explorer
-                      </a>
+                    
+                    {/* Social Media Links */}
+                    {(socialLinks.telegram || socialLinks.discord || socialLinks.twitter) && (
+                      <div className="space-y-3">
+                        <h4 className="text-md font-medium text-foreground">Social Media</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {socialLinks.telegram && (
+                            <a
+                              href={socialLinks.telegram}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center space-x-2 p-3 bg-somnia-hover rounded-lg border border-somnia-border hover:border-primary transition-colors"
+                            >
+                              <TelegramIcon className="text-blue-500" size={16} />
+                              <span className="text-sm font-medium">Telegram</span>
+                              <ExternalLink className="w-3 h-3 text-muted-foreground ml-auto" />
+                            </a>
+                          )}
+                          
+                          {socialLinks.discord && (
+                            <a
+                              href={socialLinks.discord}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center space-x-2 p-3 bg-somnia-hover rounded-lg border border-somnia-border hover:border-primary transition-colors"
+                            >
+                              <DiscordIcon className="text-indigo-500" size={16} />
+                              <span className="text-sm font-medium">Discord</span>
+                              <ExternalLink className="w-3 h-3 text-muted-foreground ml-auto" />
+                            </a>
+                          )}
+                          
+                          {socialLinks.twitter && (
+                            <a
+                              href={socialLinks.twitter}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center space-x-2 p-3 bg-somnia-hover rounded-lg border border-somnia-border hover:border-primary transition-colors"
+                            >
+                              <TwitterIcon className="text-blue-400" size={16} />
+                              <span className="text-sm font-medium">Twitter/X</span>
+                              <ExternalLink className="w-3 h-3 text-muted-foreground ml-auto" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Contract Info */}
+                    <div className="pt-4 border-t border-somnia-border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-muted-foreground">Contract:</span>
+                        <a 
+                          href={`https://explorer.somnia.network/address/${tokenAddress}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline"
+                        >
+                          View on OKLink Explorer
+                        </a>
+                      </div>
                     </div>
                   </div>
+                </TabsContent>
+
+                <TabsContent value="chat" className="mt-6">
+                  <TokenChat 
+                    tokenAddress={tokenAddress}
+                    tokenName={displayTokenInfo.name}
+                  />
                 </TabsContent>
               </Tabs>
             </Card>

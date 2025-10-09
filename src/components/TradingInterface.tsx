@@ -8,13 +8,14 @@ import { useToast } from "@/hooks/use-toast";
 import { parseEther } from "viem";
 import { usePumpFun, useTokenPrice, useTokenInfo, useTokenBalance } from "@/hooks/usePumpFun";
 import { logTransaction, validateTransactionHash } from "@/utils/debug";
-import { useAccount, useWaitForTransactionReceipt, useChainId, useSwitchChain, useReadContract } from 'wagmi';
+import { useAccount, useWaitForTransactionReceipt, useChainId, useSwitchChain, useReadContract, useBalance } from 'wagmi';
 import { somniaMainnetChain } from '@/config/wagmi';
 import { CONTRACT_ADDRESSES, MEME_TOKEN_ABI } from "@/config/contracts";
 import { useSomnexGraduation } from "@/hooks/useSomnex";
 import { Link } from "react-router-dom";
 import SuccessModal from "@/components/SuccessModal";
 import CurveInitializer from "@/components/CurveInitializer";
+import { formatPrice } from "@/utils/formatters";
 
 interface TradingInterfaceProps {
   tokenAddress: string;
@@ -28,6 +29,14 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
   const { tokenInfo, isLoading: tokenInfoLoading, refetch: refetchTokenInfo } = useTokenInfo(tokenAddress);
   const { price, error: priceError } = useTokenPrice(tokenAddress);
   const { balance: tokenBalance, refetch: refetchBalance } = useTokenBalance(tokenAddress);
+  
+  // Get SOMI balance for buy percentage calculations
+  const { data: somiBalance } = useBalance({
+    address: address,
+    query: {
+      enabled: !!address,
+    },
+  });
   
   // Check token allowance for selling
   const { data: allowance, refetch: refetchAllowance, error: allowanceError } = useReadContract({
@@ -59,6 +68,21 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
     type: "buy" | "sell" | "create";
   } | null>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
+
+  // Percentage calculation functions
+  const setPercentageOfSomiBalance = (percentage: number) => {
+    if (!somiBalance) return;
+    const balance = parseFloat(somiBalance.formatted);
+    const amount = (balance * percentage / 100).toFixed(6);
+    setSttAmount(amount);
+  };
+
+  const setPercentageOfTokenBalance = (percentage: number) => {
+    if (!tokenBalance) return;
+    const balance = parseFloat(tokenBalance);
+    const amount = (balance * percentage / 100).toFixed(6);
+    setTokenAmount(amount);
+  };
   
   const { isLoading: isConfirming, isSuccess, isError: txIsError, error: txError } = useWaitForTransactionReceipt({
     hash: txHash as `0x${string}`,
@@ -470,10 +494,6 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
 
   // Show error if there's a price error that's not just normal trading issues
 
-  const progressToGraduation = tokenInfo.graduatedToDeX ?
-    100 :
-    (parseFloat(tokenInfo.sttRaised) / 10000) * 100;
-
   return (
     <Card className="bg-card border-border">
       <CardHeader className="pb-3 md:pb-6">
@@ -490,7 +510,7 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
             </div>
           </div>
           <div className="text-left sm:text-right">
-            <p className="font-bold text-base md:text-lg">{parseFloat(price).toFixed(8)} SOMI</p>
+            <p className="font-bold text-base md:text-lg">{formatPrice(parseFloat(price))} SOMI</p>
             <p className="text-xs text-muted-foreground">per token</p>
           </div>
         </CardTitle>
@@ -507,82 +527,6 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
           }} 
         />
         
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Progress to Somnex DEX</span>
-            <span>{tokenInfo.graduatedToDeX ? "Graduated to Somnex!" : `${tokenInfo.sttRaised}/10,000 SOMI`}</span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div
-              className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{ width: `${Math.min(progressToGraduation, 100)}%` }}
-            />
-          </div>
-          {tokenInfo.graduatedToDeX && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                This token has graduated to Somnex DEX! 15,000 SOMI locked permanently.
-              </p>
-              <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/90">
-                <Link to="/somnex">
-                  <Rocket className="w-4 h-4 mr-2" />
-                  Trade on Somnex DEX
-                </Link>
-              </Button>
-            </div>
-          )}
-          {canGraduate && !tokenInfo.graduatedToDeX && (
-            <div className="space-y-2">
-              <p className="text-sm text-green-500 font-medium">
-                Ready to graduate to Somnex DEX!
-              </p>
-              <Button
-                onClick={async () => {
-                  if (!address) {
-                    toast({
-                      title: "Wallet Required",
-                      description: "Please connect your wallet to graduate token",
-                      variant: "destructive"
-                    });
-                    return;
-                  }
-
-                  if (chain?.id !== somniaMainnetChain.id) {
-                    toast({
-                      title: "Wrong Network",
-                      description: "Please switch to Somnia Mainnet to graduate token",
-                      variant: "destructive"
-                    });
-                    handleNetworkSwitch();
-                    return;
-                  }
-
-                  try {
-                    toast({
-                      title: "Graduating Token",
-                      description: "Listing token on Somnex DEX with locked liquidity...",
-                    });
-
-                    const hash = await graduateToken();
-
-                    if (hash) {
-                      toast({
-                        title: "Graduation Successful!",
-                        description: "Token is now listed on Somnex DEX with permanent liquidity lock",
-                      });
-                    }
-                  } catch (error: any) {
-                    console.error("Graduation error:", error);
-                  }
-                }}
-                className="w-full bg-green-600 hover:bg-green-700"
-              >
-                <Rocket className="w-4 h-4 mr-2" />
-                Graduate to Somnex
-              </Button>
-            </div>
-          )}
-        </div>
 
         {!tokenInfo.graduatedToDeX && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -599,7 +543,12 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
 
             <TabsContent value="buy" className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">SOMI Amount</label>
+                <div className="flex justify-between">
+                  <label className="text-sm font-medium">SOMI Amount</label>
+                  <span className="text-xs text-muted-foreground">
+                    Balance: {somiBalance ? parseFloat(somiBalance.formatted).toFixed(4) : '0.0000'} SOMI
+                  </span>
+                </div>
                 <Input
                   type="number"
                   placeholder="0.01"
@@ -607,6 +556,22 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
                   onChange={(e) => setSttAmount(e.target.value)}
                   disabled={isTrading || isConfirming}
                 />
+                
+                {/* Percentage buttons for buying */}
+                <div className="grid grid-cols-5 gap-1">
+                  {[10, 25, 50, 75, 100].map((percentage) => (
+                    <Button
+                      key={percentage}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setPercentageOfSomiBalance(percentage)}
+                      disabled={isTrading || isConfirming || !somiBalance}
+                    >
+                      {percentage}%
+                    </Button>
+                  ))}
+                </div>
               </div>
               
               <div className="bg-muted/50 rounded-lg p-3">
@@ -658,12 +623,9 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <label className="text-sm font-medium">Token Amount</label>
-                  <button 
-                    className="text-xs text-primary hover:underline"
-                    onClick={() => setTokenAmount(tokenBalance)}
-                  >
-                    Max: {parseFloat(tokenBalance).toFixed(2)} {tokenInfo.symbol}
-                  </button>
+                  <span className="text-xs text-muted-foreground">
+                    Balance: {parseFloat(tokenBalance || "0").toFixed(2)} {tokenInfo.symbol}
+                  </span>
                 </div>
                 <Input
                   type="number"
@@ -672,6 +634,22 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
                   onChange={(e) => setTokenAmount(e.target.value)}
                   disabled={isTrading || isConfirming}
                 />
+                
+                {/* Percentage buttons for selling */}
+                <div className="grid grid-cols-5 gap-1">
+                  {[10, 25, 50, 75, 100].map((percentage) => (
+                    <Button
+                      key={percentage}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setPercentageOfTokenBalance(percentage)}
+                      disabled={isTrading || isConfirming || !tokenBalance || parseFloat(tokenBalance) === 0}
+                    >
+                      {percentage}%
+                    </Button>
+                  ))}
+                </div>
               </div>
               
               <div className="bg-muted/50 rounded-lg p-3">

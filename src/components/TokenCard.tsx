@@ -1,8 +1,8 @@
-import { MessageCircle, TrendingUp, Users } from "lucide-react";
+import { TrendingUp, Users, BarChart3, MessageCircle } from "lucide-react";
+import { parseSocialLinksFromDescription } from "@/utils/socialLinks";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import BondingCurveChart from "./BondingCurveChart";
 
 interface TokenCardProps {
   name: string;
@@ -19,6 +19,8 @@ interface TokenCardProps {
   tokensSold?: number;
   showChart?: boolean;
   address?: string;
+  graduatedToDeX?: boolean;
+  sttRaised?: string;
 }
 
 const TokenCard = ({
@@ -35,14 +37,24 @@ const TokenCard = ({
   liquidityPooled = 0,
   tokensSold = 0,
   showChart = false,
-  address
+  address,
+  graduatedToDeX = false,
+  sttRaised = "0"
 }: TokenCardProps) => {
+  // DEX graduation threshold: 10,000 SOMI raised
+  const DEX_GRADUATION_THRESHOLD = 10000;
+  const sttRaisedValue = parseFloat(sttRaised || "0");
+  const progressToDeX = Math.min((sttRaisedValue / DEX_GRADUATION_THRESHOLD) * 100, 100);
+  
+  // Check if token has social links
+  const { socialLinks } = parseSocialLinksFromDescription(description);
+  const hasSocialLinks = Object.keys(socialLinks).length > 0;
   return (
     <Card className="group bg-somnia-card border-somnia-border hover:border-primary/50 transition-all duration-300 hover:shadow-somnia-glow cursor-pointer relative overflow-hidden">
-      <div className="p-3 md:p-4 relative z-10">
-        {/* Terminal-style header */}
-        <div className="flex items-start justify-between mb-3 border-b border-somnia-border pb-2">
-          <div className="flex items-center space-x-3">
+      <div className="p-3 relative z-10">
+        {/* Compact header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
             <div className="relative">
               <img
                 src={image}
@@ -51,16 +63,15 @@ const TokenCard = ({
                   const target = e.target as HTMLImageElement;
                   target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${address || name}`;
                 }}
-                className="w-8 h-8 md:w-10 md:h-10 rounded border border-somnia-border group-hover:border-primary/50 transition-colors"
+                className="w-6 h-6 rounded border border-somnia-border group-hover:border-primary/50 transition-colors"
               />
               {trending && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded flex items-center justify-center">
-                  <span className="text-xs text-primary-foreground">*</span>
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded">
                 </div>
               )}
             </div>
             <div>
-              <h3 className="text-xs md:text-sm font-medium text-primary group-hover:text-primary/80 transition-colors line-clamp-1">
+              <h3 className="text-xs font-medium text-primary group-hover:text-primary/80 transition-colors line-clamp-1">
                 {name.toUpperCase()}
               </h3>
               <p className="text-xs text-muted-foreground">
@@ -69,68 +80,70 @@ const TokenCard = ({
             </div>
           </div>
           
-          {trending && (
-            <span className="text-xs text-primary bg-primary/20 px-1 py-0.5 rounded border border-primary/30">
-              hot
-            </span>
-          )}
+          <div className="flex items-center space-x-1">
+            {graduatedToDeX && (
+              <Badge variant="outline" className="text-xs px-1 py-0 h-4 border-primary/30 text-primary">
+                DEX
+              </Badge>
+            )}
+            {trending && (
+              <Badge variant="outline" className="text-xs px-1 py-0 h-4 border-primary/30 text-primary">
+                HOT
+              </Badge>
+            )}
+            {hasSocialLinks && (
+              <Badge variant="outline" className="text-xs px-1 py-0 h-4 border-blue-500/30 text-blue-400">
+                <MessageCircle className="w-2 h-2" />
+              </Badge>
+            )}
+          </div>
         </div>
 
-        {/* Description */}
+        {/* Key metrics - prominently displayed */}
+        <div className="space-y-2 mb-3">
+          {/* Market Cap - Biggest emphasis */}
+          <div className="text-center py-2 bg-somnia-hover/50 rounded border border-somnia-border/50">
+            <div className="text-xs text-muted-foreground mb-1">Market Cap</div>
+            <div className="text-lg font-bold text-primary">{marketCap}</div>
+          </div>
+          
+          {/* Price and Progress row */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="text-center py-1 bg-somnia-hover/30 rounded">
+              <div className="text-xs text-muted-foreground">Price</div>
+              <div className="text-sm font-semibold text-foreground">{price}</div>
+            </div>
+            <div className="text-center py-1 bg-somnia-hover/30 rounded">
+              <div className="text-xs text-muted-foreground">To DEX</div>
+              <div className="text-sm font-semibold text-primary">{progressToDeX.toFixed(1)}%</div>
+            </div>
+          </div>
+          
+          {/* Progress bar */}
+          <div className="w-full bg-somnia-border rounded-full h-1.5">
+            <div 
+              className="bg-primary h-1.5 rounded-full transition-all duration-300"
+              style={{ width: `${Math.min(progressToDeX, 100)}%` }}
+            />
+          </div>
+        </div>
+        
+        {/* Description - smaller */}
         {description && (
-          <p className="text-xs text-muted-foreground mb-2 md:mb-3 line-clamp-2 leading-relaxed">
-            # {description}
+          <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+            {description}
           </p>
         )}
 
-        {/* Terminal-style stats */}
-        <div className="space-y-1 mb-2 md:mb-3 text-xs">
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground">market_cap:</span>
-            <span className="text-foreground font-medium">{marketCap}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground">price:</span>
-            <div className="flex items-center space-x-2">
-              <span className="text-foreground font-medium">{price}</span>
-              <span className={`text-xs px-1 py-0.5 rounded ${
-                change24h >= 0 
-                  ? 'text-primary bg-primary/20' 
-                  : 'text-destructive bg-destructive/20'
-              }`}>
-                {change24h >= 0 ? '+' : ''}{change24h.toFixed(1)}%
-              </span>
-            </div>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground">holders:</span>
-            <span className="text-foreground font-medium">{holders.toLocaleString()}</span>
-          </div>
+        {/* Compact actions */}
+        <div className="grid grid-cols-2 gap-1 pt-2 border-t border-somnia-border">
+          <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-2 h-7">
+            BUY
+          </Button>
+          <Button size="sm" variant="outline" className="border-somnia-border hover:bg-somnia-hover text-xs px-2 h-7">
+            SELL
+          </Button>
         </div>
-
-        {/* Terminal actions */}
-        <div className="space-y-2 pt-2 border-t border-somnia-border">
-          <div className="grid grid-cols-2 gap-1 md:gap-2">
-            <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs px-2">
-              buy()
-            </Button>
-            <Button size="sm" variant="outline" className="border-somnia-border hover:bg-somnia-hover text-xs px-2">
-              sell()
-            </Button>
-          </div>
-        </div>
-
-        {/* Bonding Curve Chart (for featured tokens) */}
-        {showChart && (
-          <div className="mt-3 pt-3 border-t border-somnia-border">
-            <BondingCurveChart
-              tokenSymbol={symbol}
-              currentSupply={tokensSold}
-              currentPrice={parseFloat(price.replace(/[^0-9.]/g, ''))}
-              liquidityPooled={liquidityPooled}
-            />
-          </div>
-        )}
       </div>
       
       {/* Subtle scan lines */}

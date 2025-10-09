@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Coins, TrendingUp, Lock, Loader2 } from "lucide-react";
+import { Upload, Coins, TrendingUp, Lock, Loader2, MessageCircle } from "lucide-react";
+import { TelegramIcon, DiscordIcon, TwitterIcon } from "@/components/icons/SocialIcons";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import { useWaitForTransactionReceipt, useAccount, useChainId, useSwitchChain } 
 import { somniaMainnetChain } from '@/config/wagmi';
 import SuccessModal from "@/components/SuccessModal";
 import { logTransaction, validateTransactionHash } from "@/utils/debug";
+import { validateSocialUrl } from "@/utils/socialLinks";
 
 interface CreateTokenModalProps {
   isOpen: boolean;
@@ -36,7 +38,10 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
     description: "",
     imageUri: "",
     initialPrice: "0.0001",
-    creationFee: "10"
+    creationFee: "10",
+    telegram: "",
+    discord: "",
+    twitter: ""
   });
 
   const { isLoading: isConfirming, isSuccess, isError, error: txError } = useWaitForTransactionReceipt({
@@ -48,6 +53,27 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const formatDescriptionWithSocials = (description: string, telegram: string, discord: string, twitter: string) => {
+    const socialLinks = {
+      telegram: telegram.trim(),
+      discord: discord.trim(), 
+      twitter: twitter.trim()
+    };
+
+    // Filter out empty links
+    const validLinks = Object.fromEntries(
+      Object.entries(socialLinks).filter(([_, url]) => url !== "")
+    );
+
+    // If no social links, just return description
+    if (Object.keys(validLinks).length === 0) {
+      return description;
+    }
+
+    // Append social links as JSON to description
+    return `${description}\n\n__SOCIAL_LINKS__${JSON.stringify(validLinks)}`;
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,17 +132,49 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
       return;
     }
 
+    // Validate social media URLs
+    const socialValidations = [
+      { field: 'telegram', value: formData.telegram, platform: 'telegram' as const },
+      { field: 'discord', value: formData.discord, platform: 'discord' as const },
+      { field: 'twitter', value: formData.twitter, platform: 'twitter' as const }
+    ];
+
+    for (const { field, value, platform } of socialValidations) {
+      if (value && !validateSocialUrl(value, platform)) {
+        const platformNames = {
+          telegram: 'Telegram',
+          discord: 'Discord', 
+          twitter: 'Twitter/X'
+        };
+        toast({
+          title: "Invalid URL",
+          description: `Please enter a valid ${platformNames[platform]} URL`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     setIsCreating(true);
     setStep(2);
     setStatusMessage("Preparing transaction...");
 
     try {
       setStatusMessage("Sending transaction to blockchain...");
+      
+      // Format description with social links
+      const formattedDescription = formatDescriptionWithSocials(
+        formData.description,
+        formData.telegram,
+        formData.discord,
+        formData.twitter
+      );
+      
       const hash = await createToken(
         formData.name,
         formData.symbol,
         formData.imageUri || "",
-        formData.description
+        formattedDescription
       );
 
       logTransaction('Create Token', hash);
@@ -271,6 +329,83 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
           </div>
           <p className="text-xs text-muted-foreground">
             Upload an image or paste an image URL. If not provided, a unique avatar will be generated.
+          </p>
+        </div>
+      </div>
+
+      {/* Social Media Links */}
+      <div className="space-y-4">
+        <div>
+          <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center">
+            <MessageCircle className="w-4 h-4 mr-2 text-primary" />
+            Social Media Links (Optional)
+          </h4>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="telegram" className="flex items-center text-sm">
+                <TelegramIcon className="text-blue-500" size={12} />
+                <span className="ml-1">Telegram</span>
+              </Label>
+              <Input
+                id="telegram"
+                placeholder="https://t.me/yourchannel"
+                value={formData.telegram}
+                onChange={(e) => handleInputChange("telegram", e.target.value)}
+                className={`bg-somnia-card border-somnia-border focus:border-primary ${
+                  formData.telegram && !validateSocialUrl(formData.telegram, 'telegram') 
+                    ? 'border-red-500 focus:border-red-500' 
+                    : ''
+                }`}
+              />
+              {formData.telegram && !validateSocialUrl(formData.telegram, 'telegram') && (
+                <p className="text-xs text-red-500">Please enter a valid Telegram URL (e.g., https://t.me/channel)</p>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="discord" className="flex items-center text-sm">
+                <DiscordIcon className="text-indigo-500" size={12} />
+                <span className="ml-1">Discord</span>
+              </Label>
+              <Input
+                id="discord"
+                placeholder="https://discord.gg/yourserver"
+                value={formData.discord}
+                onChange={(e) => handleInputChange("discord", e.target.value)}
+                className={`bg-somnia-card border-somnia-border focus:border-primary ${
+                  formData.discord && !validateSocialUrl(formData.discord, 'discord') 
+                    ? 'border-red-500 focus:border-red-500' 
+                    : ''
+                }`}
+              />
+              {formData.discord && !validateSocialUrl(formData.discord, 'discord') && (
+                <p className="text-xs text-red-500">Please enter a valid Discord URL (e.g., https://discord.gg/server)</p>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="twitter" className="flex items-center text-sm">
+                <TwitterIcon className="text-blue-400" size={12} />
+                <span className="ml-1">Twitter/X</span>
+              </Label>
+              <Input
+                id="twitter"
+                placeholder="https://twitter.com/youraccount"
+                value={formData.twitter}
+                onChange={(e) => handleInputChange("twitter", e.target.value)}
+                className={`bg-somnia-card border-somnia-border focus:border-primary ${
+                  formData.twitter && !validateSocialUrl(formData.twitter, 'twitter') 
+                    ? 'border-red-500 focus:border-red-500' 
+                    : ''
+                }`}
+              />
+              {formData.twitter && !validateSocialUrl(formData.twitter, 'twitter') && (
+                <p className="text-xs text-red-500">Please enter a valid Twitter/X URL (e.g., https://twitter.com/account)</p>
+              )}
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Add social media links to help your community find and connect with your token.
           </p>
         </div>
       </div>
@@ -439,7 +574,10 @@ const CreateTokenModal = ({ isOpen, onClose }: CreateTokenModalProps) => {
               description: "",
               imageUri: "",
               initialPrice: "0.0001",
-              creationFee: "10"
+              creationFee: "10",
+              telegram: "",
+              discord: "",
+              twitter: ""
             });
             onClose();
           }}
