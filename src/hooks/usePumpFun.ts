@@ -178,8 +178,8 @@ export const useTokenPrice = (tokenAddress: string) => {
     const curve = curveInfo as any;
     console.log('Curve details for', tokenAddress, ':', {
       soldSupply: curve.soldSupply?.toString(),
-      somiCollected: curve.somiCollected?.toString(),
-      virtualSomiReserves: curve.virtualSomiReserves?.toString(),
+      sttCollected: curve.sttCollected?.toString(),
+      virtualSttReserves: curve.virtualSttReserves?.toString(),
       virtualTokenReserves: curve.virtualTokenReserves?.toString(),
       active: curve.active,
       graduated: curve.graduated
@@ -204,9 +204,9 @@ export const useTokenPrice = (tokenAddress: string) => {
     }
 
     // Calculate price from curve reserves (fallback method)
-    if (curve.virtualSomiReserves && curve.virtualTokenReserves) {
+    if (curve.virtualSttReserves && curve.virtualTokenReserves) {
       try {
-        const virtualSomi = BigInt(curve.virtualSomiReserves.toString());
+        const virtualSomi = BigInt(curve.virtualSttReserves.toString());
         const virtualTokens = BigInt(curve.virtualTokenReserves.toString());
         const soldSupply = BigInt(curve.soldSupply?.toString() || '0');
 
@@ -216,14 +216,42 @@ export const useTokenPrice = (tokenAddress: string) => {
         if (availableTokens > 0n) {
           // Price per token: virtualSOMI / availableTokens
           const pricePerToken = (virtualSomi * parseEther('1')) / availableTokens;
+          const calculatedPrice = formatEther(pricePerToken);
+          console.log('Calculated price from reserves:', calculatedPrice);
           return {
-            price: formatEther(pricePerToken),
+            price: calculatedPrice,
             isLoading: false,
             error: null,
           };
         }
       } catch (error) {
         console.error('Error calculating price from curve data:', error);
+      }
+    } else {
+      console.log('Missing reserves data:', {
+        virtualSttReserves: curve.virtualSttReserves,
+        virtualTokenReserves: curve.virtualTokenReserves
+      });
+      
+      // Try alternative calculation if reserves are missing
+      if (curve.soldSupply && curve.sttCollected) {
+        try {
+          const sold = BigInt(curve.soldSupply.toString());
+          const collected = BigInt(curve.sttCollected.toString());
+          
+          if (sold > 0n) {
+            const avgPrice = (collected * parseEther('1')) / sold;
+            const calculatedPrice = formatEther(avgPrice);
+            console.log('Calculated price from sold/collected ratio:', calculatedPrice);
+            return {
+              price: calculatedPrice,
+              isLoading: false,
+              error: null,
+            };
+          }
+        } catch (error) {
+          console.error('Error calculating price from sold/collected:', error);
+        }
       }
     }
 
@@ -306,7 +334,7 @@ export const useTokenInfo = (tokenAddress: string) => {
         createdAt: (tokenInfo as any).createdAt || (tokenInfo as any)[5],
         totalSupply: (tokenInfo as any).totalSupply ? formatEther((tokenInfo as any).totalSupply) : formatEther((tokenInfo as any)[6] || 0),
         active: (tokenInfo as any).active ?? (tokenInfo as any)[7] ?? true,
-        sttRaised: curveInfo ? formatEther((curveInfo as any).somiCollected || 0) : '0',
+        sttRaised: curveInfo ? formatEther((curveInfo as any).sttCollected || 0) : '0',
         tokensSold: curveInfo ? formatEther((curveInfo as any).soldSupply || 0) : '0',
         graduatedToDeX: !!isGraduated,
       },

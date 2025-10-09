@@ -30,6 +30,7 @@ const Index = () => {
                     <ol className="list-decimal list-inside space-y-1">
                       <li>Connect your wallet to Somnia Testnet</li>
                       <li>Click "Create Token" and fill in your token details</li>
+                      <li>Optionally add social media links (Telegram, Discord, Twitter)</li>
                       <li>Pay the creation fee (10 SOMI)</li>
                       <li>Your token will be live on a bonding curve</li>
                     </ol>

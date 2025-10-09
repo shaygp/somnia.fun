@@ -1,4 +1,5 @@
-import { TrendingUp, Users, BarChart3 } from "lucide-react";
+import { TrendingUp, Users, BarChart3, MessageCircle } from "lucide-react";
+import { parseSocialLinksFromDescription } from "@/utils/socialLinks";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,10 @@ const TokenCard = ({
   const DEX_GRADUATION_THRESHOLD = 10000;
   const sttRaisedValue = parseFloat(sttRaised || "0");
   const progressToDeX = Math.min((sttRaisedValue / DEX_GRADUATION_THRESHOLD) * 100, 100);
+  
+  // Check if token has social links
+  const { socialLinks } = parseSocialLinksFromDescription(description);
+  const hasSocialLinks = Object.keys(socialLinks).length > 0;
   return (
     <Card className="group bg-somnia-card border-somnia-border hover:border-primary/50 transition-all duration-300 hover:shadow-somnia-glow cursor-pointer relative overflow-hidden">
       <div className="p-3 relative z-10">
@@ -84,6 +89,11 @@ const TokenCard = ({
             {trending && (
               <Badge variant="outline" className="text-xs px-1 py-0 h-4 border-primary/30 text-primary">
                 HOT
+              </Badge>
+            )}
+            {hasSocialLinks && (
+              <Badge variant="outline" className="text-xs px-1 py-0 h-4 border-blue-500/30 text-blue-400">
+                <MessageCircle className="w-2 h-2" />
               </Badge>
             )}
           </div>

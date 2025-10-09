@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Share2, Star, ExternalLink } from "lucide-react";
+import { TelegramIcon, DiscordIcon, TwitterIcon } from "@/components/icons/SocialIcons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -12,7 +13,8 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 import { useTokenPrice } from "@/hooks/usePumpFun";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { parseSocialLinksFromDescription } from "@/utils/socialLinks";
 
 const TokenDetail = () => {
   const { tokenAddress } = useParams();
@@ -85,6 +87,14 @@ const TokenDetail = () => {
 
   const displayTokenInfo = tokenInfo;
   const displayPrice = price && price !== "0" ? price : "0.000001";
+  
+  // Parse social links from description
+  const { cleanDescription, socialLinks } = useMemo(() => {
+    if (!displayTokenInfo?.description) {
+      return { cleanDescription: '', socialLinks: {} };
+    }
+    return parseSocialLinksFromDescription(displayTokenInfo.description);
+  }, [displayTokenInfo?.description]);
   
   if (!tokenAddress) {
     return <div>Token not found</div>;
@@ -254,7 +264,7 @@ const TokenDetail = () => {
                 <TabsContent value="about" className="mt-6 space-y-4">
                   <div>
                     <h3 className="text-lg font-semibold text-foreground mb-3">About {displayTokenInfo.name}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{displayTokenInfo.description}</p>
+                    <p className="text-muted-foreground leading-relaxed">{cleanDescription || displayTokenInfo.description}</p>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -311,16 +321,67 @@ const TokenDetail = () => {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-foreground">Community</h3>
                     <p className="text-muted-foreground">Join the {displayTokenInfo.name} community and start trading on Somnia.</p>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-muted-foreground">Contract:</span>
-                      <a 
-                        href={`https://explorer.somnia.network/address/${tokenAddress}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline"
-                      >
-                        View on OKLink Explorer
-                      </a>
+                    
+                    {/* Social Media Links */}
+                    {(socialLinks.telegram || socialLinks.discord || socialLinks.twitter) && (
+                      <div className="space-y-3">
+                        <h4 className="text-md font-medium text-foreground">Social Media</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {socialLinks.telegram && (
+                            <a
+                              href={socialLinks.telegram}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center space-x-2 p-3 bg-somnia-hover rounded-lg border border-somnia-border hover:border-primary transition-colors"
+                            >
+                              <TelegramIcon className="text-blue-500" size={16} />
+                              <span className="text-sm font-medium">Telegram</span>
+                              <ExternalLink className="w-3 h-3 text-muted-foreground ml-auto" />
+                            </a>
+                          )}
+                          
+                          {socialLinks.discord && (
+                            <a
+                              href={socialLinks.discord}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center space-x-2 p-3 bg-somnia-hover rounded-lg border border-somnia-border hover:border-primary transition-colors"
+                            >
+                              <DiscordIcon className="text-indigo-500" size={16} />
+                              <span className="text-sm font-medium">Discord</span>
+                              <ExternalLink className="w-3 h-3 text-muted-foreground ml-auto" />
+                            </a>
+                          )}
+                          
+                          {socialLinks.twitter && (
+                            <a
+                              href={socialLinks.twitter}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center space-x-2 p-3 bg-somnia-hover rounded-lg border border-somnia-border hover:border-primary transition-colors"
+                            >
+                              <TwitterIcon className="text-blue-400" size={16} />
+                              <span className="text-sm font-medium">Twitter/X</span>
+                              <ExternalLink className="w-3 h-3 text-muted-foreground ml-auto" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Contract Info */}
+                    <div className="pt-4 border-t border-somnia-border">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-muted-foreground">Contract:</span>
+                        <a 
+                          href={`https://explorer.somnia.network/address/${tokenAddress}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline"
+                        >
+                          View on OKLink Explorer
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </TabsContent>

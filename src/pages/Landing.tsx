@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Terminal, Plus } from "lucide-react";
+import { ArrowRight, Terminal, Plus, MessageCircle } from "lucide-react";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { TelegramIcon, DiscordIcon, TwitterIcon } from "@/components/icons/SocialIcons";
+import { validateSocialUrl } from "@/utils/socialLinks";
 import { usePumpFun } from "@/hooks/usePumpFun";
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi';
 import { useToast } from "@/hooks/use-toast";
@@ -20,10 +22,34 @@ const Landing = () => {
     name: "",
     symbol: "",
     description: "",
-    imageUri: ""
+    imageUri: "",
+    telegram: "",
+    discord: "",
+    twitter: ""
   });
   const [isCreating, setIsCreating] = useState(false);
   const [txHash, setTxHash] = useState("");
+
+  const formatDescriptionWithSocials = (description: string, telegram: string, discord: string, twitter: string) => {
+    const socialLinks = {
+      telegram: telegram.trim(),
+      discord: discord.trim(), 
+      twitter: twitter.trim()
+    };
+
+    // Filter out empty links
+    const validLinks = Object.fromEntries(
+      Object.entries(socialLinks).filter(([_, url]) => url !== "")
+    );
+
+    // If no social links, just return description
+    if (Object.keys(validLinks).length === 0) {
+      return description;
+    }
+
+    // Append social links as JSON to description
+    return `${description}\n\n__SOCIAL_LINKS__${JSON.stringify(validLinks)}`;
+  };
 
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash: txHash as `0x${string}`,
@@ -47,15 +73,46 @@ const Landing = () => {
       });
       return;
     }
+
+    // Validate social media URLs
+    const socialValidations = [
+      { field: 'telegram', value: tokenData.telegram, platform: 'telegram' as const },
+      { field: 'discord', value: tokenData.discord, platform: 'discord' as const },
+      { field: 'twitter', value: tokenData.twitter, platform: 'twitter' as const }
+    ];
+
+    for (const { field, value, platform } of socialValidations) {
+      if (value && !validateSocialUrl(value, platform)) {
+        const platformNames = {
+          telegram: 'Telegram',
+          discord: 'Discord', 
+          twitter: 'Twitter/X'
+        };
+        toast({
+          title: "Invalid URL",
+          description: `Please enter a valid ${platformNames[platform]} URL`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
     
     setIsCreating(true);
     
     try {
+      // Format description with social links
+      const formattedDescription = formatDescriptionWithSocials(
+        tokenData.description,
+        tokenData.telegram,
+        tokenData.discord,
+        tokenData.twitter
+      );
+
       const hash = await createToken(
         tokenData.name,
         tokenData.symbol,
         tokenData.imageUri || "https://via.placeholder.com/256",
-        tokenData.description
+        formattedDescription
       );
       
       setTxHash(hash);
@@ -124,6 +181,10 @@ const Landing = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <span className="text-primary">$</span>
+                <span className="text-muted-foreground">add social media links to build your community</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-primary">$</span>
                 <span className="text-muted-foreground">or type './board' to explore existing tokens</span>
               </div>
             </div>
@@ -188,6 +249,76 @@ const Landing = () => {
                   />
                   <div className="text-xs text-muted-foreground mt-1">
                     {tokenData.description.length}/200 characters
+                  </div>
+                </div>
+
+                {/* Social Media Links */}
+                <div className="border-t border-somnia-border pt-4">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <MessageCircle className="w-4 h-4 text-primary" />
+                    <span className="text-muted-foreground text-sm">social_links --optional</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm text-muted-foreground block mb-2 flex items-center">
+                        <TelegramIcon className="text-blue-500 mr-2" size={14} />
+                        telegram_url:
+                      </label>
+                      <Input
+                        placeholder="https://t.me/yourchannel"
+                        value={tokenData.telegram}
+                        onChange={(e) => setTokenData({...tokenData, telegram: e.target.value})}
+                        className={`bg-somnia-hover border-somnia-border focus:border-primary focus:ring-1 focus:ring-primary ${
+                          tokenData.telegram && !validateSocialUrl(tokenData.telegram, 'telegram') 
+                            ? 'border-red-500 focus:border-red-500' 
+                            : ''
+                        }`}
+                      />
+                      {tokenData.telegram && !validateSocialUrl(tokenData.telegram, 'telegram') && (
+                        <div className="text-xs text-red-500 mt-1">Invalid Telegram URL</div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm text-muted-foreground block mb-2 flex items-center">
+                        <DiscordIcon className="text-indigo-500 mr-2" size={14} />
+                        discord_url:
+                      </label>
+                      <Input
+                        placeholder="https://discord.gg/yourserver"
+                        value={tokenData.discord}
+                        onChange={(e) => setTokenData({...tokenData, discord: e.target.value})}
+                        className={`bg-somnia-hover border-somnia-border focus:border-primary focus:ring-1 focus:ring-primary ${
+                          tokenData.discord && !validateSocialUrl(tokenData.discord, 'discord') 
+                            ? 'border-red-500 focus:border-red-500' 
+                            : ''
+                        }`}
+                      />
+                      {tokenData.discord && !validateSocialUrl(tokenData.discord, 'discord') && (
+                        <div className="text-xs text-red-500 mt-1">Invalid Discord URL</div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm text-muted-foreground block mb-2 flex items-center">
+                        <TwitterIcon className="text-blue-400 mr-2" size={14} />
+                        twitter_url:
+                      </label>
+                      <Input
+                        placeholder="https://twitter.com/youraccount"
+                        value={tokenData.twitter}
+                        onChange={(e) => setTokenData({...tokenData, twitter: e.target.value})}
+                        className={`bg-somnia-hover border-somnia-border focus:border-primary focus:ring-1 focus:ring-primary ${
+                          tokenData.twitter && !validateSocialUrl(tokenData.twitter, 'twitter') 
+                            ? 'border-red-500 focus:border-red-500' 
+                            : ''
+                        }`}
+                      />
+                      {tokenData.twitter && !validateSocialUrl(tokenData.twitter, 'twitter') && (
+                        <div className="text-xs text-red-500 mt-1">Invalid Twitter/X URL</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
