@@ -493,10 +493,6 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
 
   // Show error if there's a price error that's not just normal trading issues
 
-  const progressToGraduation = tokenInfo.graduatedToDeX ?
-    100 :
-    (parseFloat(tokenInfo.sttRaised) / 10000) * 100;
-
   return (
     <Card className="bg-card border-border">
       <CardHeader className="pb-3 md:pb-6">
@@ -530,82 +526,6 @@ export default function TradingInterface({ tokenAddress }: TradingInterfaceProps
           }} 
         />
         
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Progress to Somnex DEX</span>
-            <span>{tokenInfo.graduatedToDeX ? "Graduated to Somnex!" : `${tokenInfo.sttRaised}/10,000 SOMI`}</span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div
-              className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{ width: `${Math.min(progressToGraduation, 100)}%` }}
-            />
-          </div>
-          {tokenInfo.graduatedToDeX && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                This token has graduated to Somnex DEX! 15,000 SOMI locked permanently.
-              </p>
-              <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/90">
-                <Link to="/somnex">
-                  <Rocket className="w-4 h-4 mr-2" />
-                  Trade on Somnex DEX
-                </Link>
-              </Button>
-            </div>
-          )}
-          {canGraduate && !tokenInfo.graduatedToDeX && (
-            <div className="space-y-2">
-              <p className="text-sm text-green-500 font-medium">
-                Ready to graduate to Somnex DEX!
-              </p>
-              <Button
-                onClick={async () => {
-                  if (!address) {
-                    toast({
-                      title: "Wallet Required",
-                      description: "Please connect your wallet to graduate token",
-                      variant: "destructive"
-                    });
-                    return;
-                  }
-
-                  if (chain?.id !== somniaMainnetChain.id) {
-                    toast({
-                      title: "Wrong Network",
-                      description: "Please switch to Somnia Mainnet to graduate token",
-                      variant: "destructive"
-                    });
-                    handleNetworkSwitch();
-                    return;
-                  }
-
-                  try {
-                    toast({
-                      title: "Graduating Token",
-                      description: "Listing token on Somnex DEX with locked liquidity...",
-                    });
-
-                    const hash = await graduateToken();
-
-                    if (hash) {
-                      toast({
-                        title: "Graduation Successful!",
-                        description: "Token is now listed on Somnex DEX with permanent liquidity lock",
-                      });
-                    }
-                  } catch (error: any) {
-                    console.error("Graduation error:", error);
-                  }
-                }}
-                className="w-full bg-green-600 hover:bg-green-700"
-              >
-                <Rocket className="w-4 h-4 mr-2" />
-                Graduate to Somnex
-              </Button>
-            </div>
-          )}
-        </div>
 
         {!tokenInfo.graduatedToDeX && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

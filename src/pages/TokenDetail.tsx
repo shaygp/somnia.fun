@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BondingCurveChart from "@/components/BondingCurveChart";
+import DetailedBondingCurve from "@/components/DetailedBondingCurve";
 import TradingInterface from "@/components/TradingInterface";
 import ActivityFeed from "@/components/ActivityFeed";
 import AnimatedBackground from "@/components/AnimatedBackground";
@@ -232,12 +233,13 @@ const TokenDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Chart and Info */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Bonding Curve Chart */}
-            <BondingCurveChart
+            {/* Detailed Bonding Curve Analysis */}
+            <DetailedBondingCurve
               tokenSymbol={displayTokenInfo.symbol}
               currentSupply={parseFloat(displayTokenInfo.tokensSold)}
               currentPrice={parseFloat(displayPrice)}
               liquidityPooled={parseFloat(displayTokenInfo.sttRaised)}
+              totalSupply={parseFloat(displayTokenInfo.totalSupply)}
             />
 
             {/* Token Information */}
@@ -277,18 +279,6 @@ const TokenDetail = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Creator</p>
                       <p className="text-sm font-mono text-foreground">{displayTokenInfo.creator.slice(0, 20)}...</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Created At</p>
-                      <p className="text-sm text-foreground">
-                        {displayTokenInfo.createdAt
-                          ? new Date(displayTokenInfo.createdAt).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })
-                          : 'Unknown'}
-                      </p>
                     </div>
                   </div>
                 </TabsContent>
